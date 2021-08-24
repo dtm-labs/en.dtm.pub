@@ -8,11 +8,11 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:serve": "vitepress serve docs",
-    "docs:pub": "vitepress build docs && cd docs/.vitepress && tar -cvzf dist.tar.gz dist && scp dist.tar.gz ubuntu@s.dtm.pub:/data/dtm-docs/ && ssh ubuntu@s.dtm.pub 'cd /data/dtm-docs && tar -zvxf dist.tar.gz'",
+    "docs:pub": "vitepress build docs && cd docs/.vitepress && tar -cvzf dist.tar.gz dist && scp dist.tar.gz ubuntu@en.dtm.pub:/data/dtm-docs/ && ssh ubuntu@en.dtm.pub 'cd /data/dtm-docs && tar -zvxf dist.tar.gz'",
     "prepare": "husky install"
   },
   "devDependencies": {
-    "vitepress": "^0.15.6",
-    "husky": "^7.0.0"
+    "husky": "^7.0.1",
+    "vitepress": "^0.15.6"
   }
 }
