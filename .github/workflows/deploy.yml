@@ -31,5 +31,5 @@ jobs:
           cd docs/.vitepress
           tar -cvzf dist.tar.gz dist
           rm ~/.ssh/known_hosts
-          scp -i ../../deploy_key dist.tar.gz ${{env.host}}:${{env.dest}}
-          ssh -i ../../deploy_key ${{env.host}} 'cd ${{env.dest}} && tar -zvxf dist.tar.gz'
+          scp -i ../../deploy_key -o StrictHostKeyChecking=no dist.tar.gz ${{env.host}}:${{env.dest}}
+          ssh -i ../../deploy_key -o StrictHostKeyChecking=no ${{env.host}} 'cd ${{env.dest}} && tar -zvxf dist.tar.gz'
