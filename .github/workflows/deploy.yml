@@ -30,5 +30,6 @@ jobs:
           chmod 600 ./deploy_key
           cd docs/.vitepress
           tar -cvzf dist.tar.gz dist
+          rm ~/.ssh/known_hosts
           scp -i ../../deploy_key dist.tar.gz ${{env.host}}:${{env.dest}}
           ssh -i ../../deploy_key ${{env.host}} 'cd ${{env.dest}} && tar -zvxf dist.tar.gz'
