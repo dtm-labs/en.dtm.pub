@@ -1,19 +1,19 @@
 ---
 home: true
 heroImage: /dtm.svg
-actionText: 开始
+actionText: start
 actionLink: /guide/start
 
 features:
-  - title: 💡 极易接入
-    details: 支持HTTP、GRPC，提供非常简单的接口，极大降低上手分布式事务的难度，新手也能快速接入
-  - title: ⚡️ 使用简单
-    details: 开发者不再担心悬挂、空补偿、幂等各类问题，框架层代为处理
-  - title: 🛠️ 多语言支持
-    details: 可适合多语言栈的公司使用。方便go、python、php、nodejs、ruby各类语言使用
-  - title: 📦 易部署、易扩展
-    details: 仅依赖数据库，部署简单，易集群化，易水平扩展
-  - title: 🔩 多种分布式事务协议
-    details: 支持TCC、SAGA、XA、事务消息
+  - title: 💡 Extremely easy to adopt
+    details: Support HTTP and GRPC, provide easy-to-use interfaces, lower substantially the barrier of getting started with distributed transactions, newcomers can adopt quickly 
+  - title: ⚡️ Easy to use
+    details: Developers no longer worry about suspension, null compensation, idempotency and other tricy problems, the framework layer handles them all
+  - title: 🛠️ Multi-language support
+    details: Suitable for companies with multi-language stack. Easy for go, python, php, nodejs, ruby and so forth
+  - title: 📦 Easy to deploy, easy to extend
+    details: Only external dependence is database server, easy to deploy, cluster, and scale horizontally
+  - title: 🔩 Multiple distributed transaction protocols
+    details: Support TCC, SAGA, XA, transaction messages
 footer: BSD-2 Licensed
 ---
