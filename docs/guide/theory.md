@@ -1,82 +1,115 @@
-随着业务的快速发展、业务复杂度越来越高，几乎每个公司的系统都会从单体走向分布式，特别是转向微服务架构。随之而来就必然遇到分布式事务这个难题，DTM致力于提供一个简单易用、跨语言，同时具备高性能可扩展的分布式事务解决方案。
+With the rapid development of business and increasing business complexity, almost every company's system will move from the monolithic architecture to a distributed, especially microservice-based one. 
+Naturally with this change comes the challenging difficulty of distributed transactions.
+Our DTM is committed to providing an easy-to-use, language-agnostic, high-performance and scalable distributed transaction solution.
 
-## 基础理论
+## Basic theory
 
-在讲解具体方案之前，我们先了解一下分布式事务所涉及到的基础理论知识。
+Before explaining the our DTM solution, let's review some basic theoretical knowledge necessary for distributed transactions.
 
-我们拿转账作为例子，A需要转100元给B，那么需要给A的余额-100元，给B的余额+100元，整个转账要保证，A-100和B+100同时成功，或者同时失败。看看在各种场景下，是如何解决这个问题的。
+Let's take a money transfer as an example: A wants to transfer $100 to B.
+What needs to be done is thus to subtract $100 from A's balance and to add $100 to B's balance.
+The guarantee must be provided that the entire transfer, namely A-$100 and B+$100, either succeeds or fails atomically as a whole. 
+Let's see how this problem is solved in various scenarios.
 
-## 事务
+## Transactions
 
-把多条语句作为一个整体进行操作的功能，被称为数据库事务。数据库事务可以确保该事务范围内的所有操作都可以全部成功或者全部失败。
+The functionality to execute multiple statements as a whole is known as a database transaction.
+A database transaction ensures that all operations within the scope of that transaction either all succeed or all fail.
 
-事务具有 4 个属性：原子性、一致性、隔离性、持久性。这四个属性通常称为 ACID 特性。
+Transactions have four properties: atomicity, consistency, isolation, and persistence. 
+These four properties are commonly referred to as ACID characteristics.
 
-- Atomicity（原子性）：一个事务中的所有操作，要么全部完成，要么全部不完成，不会结束在中间某个环节。事务在执行过程中发生错误，会被恢复到事务开始前的状态，就像这个事务从来没有执行过一样。
-- Consistency（一致性）：在事务开始之前和事务结束以后，数据库的完整性没有被破坏。完整性包括外键约束、应用定义的等约束不会被破坏。
-- Isolation（隔离性）：数据库允许多个并发事务同时对其数据进行读写和修改的能力，隔离性可以防止多个事务并发执行时由于交叉执行而导致数据的不一致。
-- Durability（持久性）：事务处理结束后，对数据的修改就是永久的，即便系统故障也不会丢失。
+- Atomicity: All operations in a transaction either complete or do not complete, but never end at some point in the middle.
+  A transaction that meets an error during execution is rolled back so that the system is restored to the state it was in before the transaction began, as if the transaction had never been executed.
 
-## 分布式理论
+- Consistency: The integrity of the database is not broken before the transaction starts and after the transaction ends.
+  Integrity including foreign key constraints, application-defined constraints, etc, will not be broken.
 
-一个分布式系统最多只能同时满足一致性（Consistency）、可用性（Availability）和分区容错性（Partition tolerance）这三项中的两项。这被称为CAP理论，已经被证实。
+- Isolation: The database allows multiple concurrent transactions to read, write and modify its data at the same time.
+  Isolation prevents data inconsistencies due to cross-execution when multiple transactions are executed concurrently.
 
-### C 一致性
+- Persistence: After the transaction is finished, the modification of the data is permanent and will not be lost even if the system fails.
 
-分布式系统中，数据一般会存在不同节点的副本中，如果对第一个节点的数据成功进行了更新操作，而第二个节点上的数据却没有得到相应更新，这时候读取第二个节点的数据依然是更新前的数据，即脏数据，这就是分布式系统数据不一致的情况。
+## Distributed theory
 
-在分布式系统中，如果能够做到针对一个数据项的更新操作执行成功后，所有的用户都能读取到最新的值，那么这样的系统就被认为具有强一致性（或严格的一致性）。
+A distributed system can only satisfy at most two of the three criteria of Consistency, Availability, and Partition tolerance at the same time. 
+This is called CAP theory and has been proven.
 
-请注意CAP中的一致性和ACID中的一致性，虽然单词相同，但实际含义不同，请注意区分
+### C Consistency
 
-### A 可用性
+In distributed systems, data is usually stored in copies on different nodes. 
+If an update operation has been successfully executed on the data on the first node, but the data on the second node is not yet updated accordingly, then the data read from the second node will be the data before the update, i.e., dirty data, which is the case of data inconsistency in distributed systems.
 
-在集群中一部分节点故障后，集群整体是否还能响应客户端的读写请求。（对数据更新具备高可用性）
+In a distributed system, if it is possible to achieve that all users can read the latest value after a successful execution of an update operation on a data item, then the system is considered to have strong consistency (or strict consistency).
 
-在现代的互联网应用中，如果因为服务器宕机等问题，导致服务长期不可用，是不可接受的
+Please note that the consistency in CAP and the consistency in ACID, although with the same wording, have different meanings in practice.
+Please pay attention to the differences.
 
-### P 分区容错性
+### A Availability
 
-以实际效果而言，分区相当于对通信的时限要求。系统如果不能在时限内达成数据一致性，就意味着发生了分区的情况，必须就当前操作在 C 和 A 之间做出选择。
+Availability means whether the cluster as a whole can still respond to client read and write requests after a failure of some of the nodes in the cluster. (High availability for data updates)
 
-提高分区容忍性的办法就是一个数据项复制到多个节点上，那么出现分区之后，这一数据项仍然能在其他区中读取，容忍性就提高了。然而，把数据复制到多个节点，就会带来一致性的问题，就是多个节点上面的数据可能是不一致的。
+In modern Internet applications, it is unacceptable if the service is unavailable for a long time due to problems such as server downtime.
 
-### 面临的问题
+### P Partitioning tolerance
 
-对于多数大型互联网应用的场景，主机众多、部署分散，而且现在的集群规模越来越大，所以节点故障、网络故障是常态，而且要保证服务可用性达到N个9，即保证P和A，舍弃C。
+In practical terms, partitioning is equivalent to a time limit on communication. 
+If a system cannot achieve data consistency within the time limit, partitioning occurs and a choice must be made between Consistency and Availability concerning the current operation.
 
-如果您要深入研究CAP相关的理论，建议研究raft协议（PS：这里推荐一个讲解raft协议的动画：[raft动画](http://www.kailing.pub/raft/index.html)）。通过raft，您能够了解分布式系统面临的问题以及典型解法。
+A way to improve partitioning tolerance is to duplicate a data item to multiple nodes, then after partitioning occurs, this data item can still be read in other partitions and tolerance is improved. 
+However, duplicating data to multiple nodes introduces consistency issues, in that the data on different nodes may be inconsistent.
 
-### BASE理论
+## Problems faced
 
-BASE是Basically Available（基本可用）、Soft state（软状态）和Eventually consistent（最终一致性）三个短语的简写，BASE是对CAP中一致性和可用性权衡的结果，其来源于对大规模互联网系统分布式实践的结论，是基于CAP定理逐步演化而来的，其核心思想是即使无法做到强一致性（Strong consistency），但每个应用都可以根据自身的业务特点，采用适当的方式来使系统达到最终一致性（Eventual consistency）。接下来我们着重对BASE中的三要素进行详细讲解。
+For most scenarios of large Internet applications, there are many hosts deployed in a decentralized fashion.
+Clusters are now getting larger and larger, so node failures and network failures are normal.
+The importance to ensure service availability up to N nines means that P and A have higher priorities over C.
 
-- 基本可用是指分布式系统在出现不可预知故障的时候，允许损失部分可用性——但请注意，这绝不等价于系统不可用。
-- 弱状态也称为软状态，和硬状态相对，是指允许系统中的数据存在中间状态，并认为该中间状态的存在不会影响系统的整体可用性，即允许系统在不同节点的数据副本之间进行数据同步的过程存在延时。
-- 最终一致性强调的是系统中所有的数据副本，在经过一段时间的同步后，最终能够达到一个一致的状态。因此，最终一致性的本质是需要系统保证最终数据能够达到一致，而不需要实时保证系统数据的强一致性
+If you want to study CAP-related theories in depth, it is recommended to study the raft protocol (PS: Here is a recommended animation to explain the raft protocol: [raft animation](http://www.kailing.pub/raft/index.html)). 
+Through learning raft, you will be able to understand better the problems faced in distributed systems and the typical solutions.
 
-总的来说，BASE理论面向的是大型高可用可扩展的分布式系统，和传统事务的ACID特性使相反的，它完全不同于ACID的强一致性模型，而是提出通过牺牲强一致性来获得可用性，并允许数据在一段时间内是不一致的，但最终达到一致状态。但同时，在实际的分布式场景中，不同业务单元和组件对数据一致性的要求是不同的，因此在具体的分布式系统架构设计过程中，ACID特性与BASE理论往往又会结合在一起使用。
+## BASE theory
 
-##  分布式事务
+BASE is a shorthand for the three phrases Basically Available, Soft state, and Eventually consistent. 
+BASE results from a trade-off between consistency and availability in CAP, and is based on the conclusions of distributed practice for large-scale Internet systems and derived from the CAP theory.
+The core idea is that even though strong consistency cannot be achieved, each application can adopt an appropriate approach, according to its business characteristics, to make the system achieve Eventual consistency.
+Next, we will focus on the three elements of BASE in detail.
 
-银行跨行转账业务是一个典型分布式事务场景，假设A需要跨行转账给B，那么就涉及两个银行的数据，无法通过一个数据库的本地事务保证转账的ACID，只能够通过分布式事务来解决。
+- Basic availability means that a distributed system is allowed to lose partial availability in the event of an unpredictable failure - but note that this is in no way equivalent to the system being unavailable.
 
-分布式事务就是指事务的发起者、资源及资源管理器和事务协调者分别位于分布式系统的不同节点之上。在上述转账的业务中，用户A-100操作和用户B+100操作不是位于同一个节点上。本质上来说，分布式事务就是为了保证在分布式场景下，数据操作的正确执行。
+- Weak state, also known as soft state, as opposed to hard state, is the principle of allowing an intermediate state of data in the system and assuming that the existence of that intermediate state does not affect the overall availability of the system, i.e., allowing the system to have a delay in synchronizing data between copies of data on different nodes.
 
-分布式事务在分布式环境下，为了满足可用性、性能与降级服务的需要，降低一致性与隔离性的要求，一方面遵循 BASE 理论：
+- Final consistency emphasizes that all data copies in the distributed system, after a period of synchronization, can eventually reach a consistent state. 
+  Therefore, the essence of final consistency is that the system needs to ensure that the final data can reach a consistent state, rather than the strong consistency of the system data in real time.
 
-- 基本业务可用性（Basic Availability）
-- 柔性状态（Soft state）
-- 最终一致性（Eventual consistency）
+In summary, BASE theory aims at large, highly available and scalable distributed systems, and is the opposite of the traditional ACID feature of transactions. 
+It is completely different from the strong consistency model of ACID, but proposes to obtain availability by sacrificing strong consistency, and allows data to be inconsistent for a period of time, but eventually reach a consistent state.
+Nevertheless, in practical distributed scenarios, different business units and components have different requirements for data consistency, so the ACID feature and BASE theory are often used together in the design process of specific distributed system architectures.
 
-另一方面，分布式事务也部分遵循 ACID 规范：
+## Distributed transactions
 
-- 原子性：严格遵循
-- 一致性：事务完成后的一致性严格遵循；事务中的一致性可适当放宽
-- 隔离性：并行事务间不可影响；事务中间结果可见性允许安全放宽
-- 持久性：严格遵循
+A typical distributed transaction scenario is the inter-bank money transfer.
+Suppose A needs to transfer money to B across banks.
+The scenario involves data from two banks, thus the ACID of the transfer cannot be guaranteed by a local transaction in one database, but only be solved by a distributed transaction.
 
-## 小结
+A distributed transaction means that the transaction initiator, the resource and resource manager and the transaction coordinator are located on different nodes of the distributed system.
+In the above inter-bank transfer senarior, the A-$100 operation and the B+$100 operation are not located on the same node.
+In essence, distributed transactions aims to ensure the correct execution of data operations in a distributed scenario.
 
-具备上面相关的理论知识后，后面我们来通过dtm解决实际的分布式事务问题。
+On one hand, distributed transactions follow the BASE theory in a distributed environment in order to meet the needs of availability, performance and degraded services, while reducing the requirements of consistency and isolation:
+
+- Basic Availability
+- Soft state
+- Eventual consistency
+
+On the other hand, distributed transactions also partially follow the ACID specification.
+
+- Atomicity: strict compliance
+- Consistency: Consistency after the transaction is completed is strictly followed; consistency in the transaction can be relaxed appropriately
+- Isolation: no influence between parallel transactions; visibility of intermediate results of transactions is allowed to be relaxed in a safe manner
+- Persistence: Strictly followed
+
+## Summary
+
+After reviewing the above theoretical knowledge, let's solve actual distributed transaction problems using dtm.
 
