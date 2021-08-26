@@ -1,27 +1,33 @@
-# 介绍
+# Introduction
 
-## DTM是什么
+## What is DTM
 
-DTM是首款golang分布式事务管理框架，与其他框架不同的是，DTM提供了极简单的HTTP、GRPC接入方式，支持多语言，并且在框架层处理了各类子事务乱序难题。
+DTM is the first distributed transaction management framework in golang. 
+Unlike other frameworks, DTM provides extremely easy access to HTTP and GRPC, supports multiple language bindings, and handles tricky problems of unordered subtransactions at the framework level.
 
-您可以在[为什么选DTM](./why)中了解更多DTM的设计初衷。
+Learn more behind the design of DTM in [why choose DTM](./why).
 
-## 亮点
+## Features
 
-* 极易接入
-  - 支持HTTP、GRPC，提供非常简单的接口，极大降低上手分布式事务的难度，新手也能快速接入
-* 使用简单
-  - 开发者不再担心悬挂、空补偿、幂等各类问题，框架层代为处理
-* 跨语言
-  - 可适合多语言栈的公司使用。方便go、python、php、nodejs、ruby各类语言使用。
-* 易部署、易扩展
-  - 仅依赖mysql，部署简单，易集群化，易水平扩展
-* 多种分布式事务协议支持
-  - TCC、SAGA、XA、事务消息
+* Extremely easy to adopt
+  - Support HTTP and GRPC, provide easy-to-use programing interfaces, lower substantially the barrier of getting started with distributed transactions, newcomers can adopt quickly
 
-受邀参加中国数据库大会分享[多语言环境下分布式事务实践](http://dtcc.it168.com/yicheng.html#b9)
+* Easy to use
+  - Relieving developers from worrying about suspension, null compensation, transaction-idempotence and other tricky problems, the framework layer handles them all
 
-## 谁在使用dtm
+* Language-agnostic
+  - Suitable for companies with multiple-language stacks. 
+    Easy to write bindings for go, python, php, nodejs, ruby and other languages.
+
+* Easy to deploy, easy to extend
+  - DTM depends only on mysql, easy to deploy, cluster, and scale horizontally
+
+* Support for multiple distributed transaction protocol 
+  - TCC, SAGA, XA, transaction messages
+
+Invited speaker at the China Database Conference. [Distributed Transaction Practice in Multi-Language Environment](http://dtcc.it168.com/yicheng.html#b9)
+
+## Companies that adopt dtm
 
 [Ivydad 常青藤爸爸](https://ivydad.com)
 
@@ -39,39 +45,40 @@ DTM是首款golang分布式事务管理框架，与其他框架不同的是，DT
     vertical-align: middle;
     border-radius: 2em;
     font-weight: 600;
-" href="../other/opensource">与seata对比</a>
+" href="../other/opensource">Comparison to seata</a>
 
-## 起步
+## start
 
-::: tip 具备的基础知识
-本教程假设您已具备分布式事务相关的基础知识，如果您对这方面并不熟悉，可以阅读[分布式事务理论](../guide/theory)
+::: tip Basics to have
+This tutorial assumes that you already have basic knowledge of distributed transactions. If you are not familiar with this, first read [Theory of Distributed Transactions](../guide/theory).
 
-本教程也假设您有一定的编程基础，能够大致明白GO语言的代码，如果您对这方面并不熟悉，可以访问[golang](https://golang.google.cn/)
+This tutorial also assumes that you have some basic programming knowledge and can understand GO code in general. If you are not familiar with this, you can visit [golang](https://golang.google.cn/).
 :::
 
-- [安装](./install)，使用go语言推荐的方式
+- [install](./install) use the golang idiomatic way
 
-尝试DTM的最简单的方法是使用QuickStart例子，该例子的主要文件在[dtm/example/quick_start.go](https://github.com/yedf/dtm/blob/main/examples/quick_start.go)。
+The easiest way to try DTM is to run the QuickStart example, the main file of which is at [dtm/example/quick_start.go](https://github.com/yedf/dtm/blob/main/examples/quick_start.go).
 
-您可以在dtm目录下，通过下面命令运行这个例子
+You can run the example in the dtm directory with the following command
 
 `go run app/main.go quick_start`
 
-在这个例子中，创建了一个saga分布式事务，然后提交给dtm，核心代码如下：
+In this example, a saga distributed transaction is created and then committed to dtm, with key code shown below:
 
 ``` go
-	req := &gin.H{"amount": 30} // 微服务的载荷
-	// DtmServer为DTM服务的地址
+	req := &gin.H{"amount": 30} // microservice load threshold
+	// DtmServer is the address of DTM microservice
 	saga := dtmcli.NewSaga(DtmServer, dtmcli.MustGenGid(DtmServer)).
-		// 添加一个TransOut的子事务，正向操作为url: qsBusi+"/TransOut"， 逆向操作为url: qsBusi+"/TransOutCompensate"
+		// add a TransOut subtraction，forward operation with url: qsBusi+"/TransOut", reverse compensation operation with url: qsBusi+"/TransOutCompensate"
 		Add(qsBusi+"/TransOut", qsBusi+"/TransOutCompensate", req).
-		// 添加一个TransIn的子事务，正向操作为url: qsBusi+"/TransIn"， 逆向操作为url: qsBusi+"/TransInCompensate"
+		// add a TransIn subtraction, forward operation with url: qsBusi+"/TransIn", reverse compensation operation with url: qsBusi+"/TransInCompensate"
 		Add(qsBusi+"/TransIn", qsBusi+"/TransInCompensate", req)
-	// 提交saga事务，dtm会完成所有的子事务/回滚所有的子事务
+	// submit the created saga transaction，dtm ensures all subtractions either complete or get revoked
 	err := saga.Submit()
 ```
 
-该分布式事务中，模拟了一个跨行转账分布式事务中的场景，全局事务包含TransOut（转出子事务）和TransIn（转入子事务），每个子事务都包含正向操作和逆向补偿，定义如下：
+This distributed transaction demo simulates a scenario in a distributed transaction for cross-bank transfers.
+The master transaction is comprised of two subtransactions, TransOut (transfer money out from source account) and TransIn (transfer money into destination account), both consisting of forward operations and reverse compensation, defined as follows:
 
 ``` go
 func qsAdjustBalance(uid int, amount int) (interface{}, error) {
@@ -100,11 +107,13 @@ func qsAddRoute(app *gin.Engine) {
 }
 ```
 
-整个事务最终成功完成，时序图如下：
+The entire transaction completes successfully eventually with the following timing diagram:
 
 ![saga_normal](../imgs/saga_normal.jpg)
 
-在实际的业务中，子事务可能出现失败，例如转入的子账号被冻结导致转账失败。我们对业务代码进行修改，让TransIn的正向操作失败，然后看看结果
+In a real business, it is possible that a subtransaction may fail.
+For example, the destination subaccount is freezed, causing the transfer to fail. 
+Let's modify the business code to purposely fail the forward operation of TransIn and watch what happens.
 
 ``` go
 	app.POST(qsBusiAPI+"/TransIn", common.WrapHandler(func(c *gin.Context) (interface{}, error) {
@@ -112,20 +121,22 @@ func qsAddRoute(app *gin.Engine) {
 	}))
 ```
 
-再运行这个例子，整个事务最终失败，时序图如下：
+Running the example again, the whole transaction eventually fails with the following timing diagram:
 
 ![saga_rollback](../imgs/saga_rollback.jpg)
 
-在转入操作失败的情况下，TransIn和TransOut的补偿分支被执行，保证了最终的余额和转账前是一样的。
+Notice that in case the transfer operation fails, the TransIn and TransOut compensation branches are executed, ensuring that the final balance is the same as it was before the transfer.
 
-## 准备好了吗？
+## Ready to try?
 
-我们刚才简单介绍了一个完整的分布式事务，包括了一个成功的，以及一个回滚的。现在您应该对分布式事务有了具体的认识，本教程将带你逐步学习处理分布式事务的技术方案和技巧。
+We have just briefly described a complete distributed transaction, including a success, and a rollback.
+Now that you should have a concrete understanding of distributed transactions in DTM, keep learning this tutorial to learn step-by-step the technical solutions and techniques for handling distributed transactions.
 
-## 交流群
+## Discussion Group
 
-请加 yedf2008 好友或者扫码加好友，验证回复 dtm 按照指引进群
+WeChat: add friend with id yedf2008, or scan the OR code. Fill in dtm as verification.
 
 ![yedf2008](http://service.ivydad.com/cover/dubbingb6b5e2c0-2d2a-cd59-f7c5-c6b90aceb6f1.jpeg)
 
-如果您觉得[dtm](https://github.com/yedf/dtm)不错，或者对您有帮助，请赏颗星吧！
+Please star if you think [dtm](https://github.com/yedf/dtm) is good or helpful!
+
