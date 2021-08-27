@@ -1,28 +1,40 @@
-# 架构
+# Architecture
 
-## 架构与角色
+## Architecture and Roles
 
-dtm包括服务端和客户端，整体架构图如下：
+The overall architecture of dtm, which includes server and client, is shown in the following diagram.
 
 ![arch](../imgs/arch.jpg)
 
-整个分布式事务的运行过程中，一共有三个角色参与，和OPEN/X XA事务标准类似，但也会有一些区别
+There are three roles involved in the operation of the entire distributed transaction, similar to the OPEN/X XA transaction standard except for some differences
 
-- RM-资源管理器：RM管理分布式事务中的本地事务，负责相关数据的修改、提交、回滚、补偿等操作。通常对应一个微服务。
-- AP-应用程序：AP会注册全局事务，按照业务规则，注册子事务，调用RM接口。通常对应一个微服务。
-- TM-事务管理器：每个全局事务在TM注册，每个子事务也注册到TM。TM会协调所有的RM，将同一个全局事务的不同子事务，全部提交或全部回滚。对应dtm服务实例。
+- RM stands for Resource Manager. 
+  RM manages local transactions in distributed transactions, and is responsible for operations such as modification, commit, rollback, and compensation of related data. 
+  Usually RM corresponds to a microservice.
 
-## 高可用
+- AP stands for Application. 
+  AP registers global transactions and, according to business rules, registers sub-transactions to invoke RM via interface. 
+  Usually AP corresponds to a microservice.
 
-在DTM架构下，TM由dtm服务构成，每个dtm实例都是无状态的应用程序，他们将全局事务数据存储在dtm的数据库。实际业务只要给dtm配置了高可用的数据库，那么整个dtm服务就是天然高可用的。
+- TM stands for Transaction Manager. 
+  Each global transaction is registered within TM, and each sub-transaction is also registered within TM. 
+  TM coordinates all RMs, and commits or rolls back all the different sub-transactions that belong to the same global transaction. 
+  TM corresponds to the dtm service instance.
 
-在简单部署模式下，一方面每个dtm都提供rest服务，接受AP的事务请求。另一方面dtm还会启动一个协程，定时查询超时需要处理的全局事务，重试之前状态不确定的事务分支。
+## High Availability
 
-## 嵌套子事务
+Under DTM architecture, TM consists of dtm services.
+Each dtm instance is a stateless application, which stores global transaction data in dtm's database. 
+The whole dtm service would be naturally highly available so long as the dtm is configured with a highly available database in the actual business.
 
-dtm的Tcc事务模式，支持子事务嵌套，流程图如下：
+In the simple deployment model, on one hand, each dtm provides a RESTful service that accepts transaction requests from APs; on the other hand, each dtm also starts a concurrent process that regularly queries for global transactions that timed out and need to be processed, and retries transaction branches whose status was uncertain after previous execution.
+
+## Nested sub-transactions
+
+The TCC transaction mode of dtm supports nesting of sub-transactions, exemplified in the following flowchart:
 
 ![nested_trans](../imgs/nested_trans.jpg)
 
-在这个流程图中，Order这个微服务，管理了订单相关的数据修改，同时还管理了一个嵌套的子事务，因此他即扮演了RM的角色，也扮演了AP的角色。
+In this flowchart, the Order microservice is responsible for the order-related data modification and also manages a nested sub-transaction.
+Therefore, it plays the role of RM and AP.
 
