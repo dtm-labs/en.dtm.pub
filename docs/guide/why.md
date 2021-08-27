@@ -1,24 +1,36 @@
-# 为什么dtm
+# Why to choose dtm
 
-## 现实问题
+## Real world problems
 
-dtm项目起源于实际项目中的问题。我们在公司内部，涉及订单支付的服务，会将所有业务相关逻辑放到一个大的本地事务，这会导致大量耦合，复杂度大幅提升。
+The dtm project originated from a problem in a real project.
+In our company, services involving order payments put all business-related logic into one big local transaction, which leads to significant coupling and a huge increase in complexity.
 
-我们在进行go语言的微服务化过程中，需要将原先的事务拆分成分布式事务。我们调研了一遍市场上面的开源项目，只有java有成熟的分布式事务解决方案，golang没有，其他语言也没有。因此我们的选择有两个：
+In the middle of code refactor into microservice-based architecture using Go, we needed to split the original transaction into several distributed transactions. 
+After researching available open source distributed transaction solutions, we found that the only mature solution is Java-based.
+Neither Go nor other languages have mature distributed transaction solutions. 
+This left us two choices:
 
-- 第一种方式是全部转用java开发，使用Java中应用最广泛的seata方案。这种方案代价非常高，需要将原有大量的业务使用Java重写
-- 第二种方式是自己开发一套分布式事务管理器，现有的业务还保留当前语言，渐进式微服务化
+- The first choice is to switch completely to Java, and then use seata, the most popular solution in Java applications. 
+  This solution is too costly since it requires a lot of the original business to be rewritten in Java.
 
-## dtm能带来什么
+- The second choice is to develop our own distributed transaction manager.
+  In this way, we would be able to keep existing business developed in Go, and move to microservice-based architecture progressively.
 
-我们细致的评估完第二种方案后，发现我们计划自主开发的分布式事务管理器dtm大大优于第一种，有以下几点：
+## Capability of dtm
 
-- 可以提供非常简单易用的接口，拆分具体业务接入分布式事务，普通几年开发经验的工程师就能够胜任
-- 我们可以对多语言栈进行了支持，这个特性对于小公司切换语言栈，以及大公司采用多语言栈，具有重大意义
-- 我们有一项核心技术子事务屏障，可以大大降低开发者处理子事务乱序的处理难度，在seata上进行该技术的开发，难度很高，而自己的方案则简单很多
+After carefully evaluating the second option, we found that our own distributed transaction manager, dtm, is significantly better than the first one in the following ways:
 
-## 开源
+- dtm provides a very simple and easy-to-use interface for splitting specific business services into distributed transactions, which allows developers with a few years of development experience to adopt quickly
 
-综合下来，简单易用性、多语言支持、减轻业务负担三个重要方面，我们的方案dtm都非常优秀，相较于我们调研看到的其他开源方案，亮点突出，因此我们决定自己开发。dtm与seata的比较，可以看这里[DTM vs SEATA](../other/opensource)
+- dtm supports multi-language stacks, a feature of great importance to small companies in the middle of switching language stacks, and to large companies already adopting multi-language stacks
 
-因为我们的实践表明dtm确实非常优秀，能够极大的降低分布式事务的使用门槛，能够解决当前市面上许多无法解决的问题，因此我们将它开源，反哺开源社区。
+- sub-transaction barrier, our core technology, greatly reduces the difficulty of developers to deal with sub-transaction disorder.
+  Note that implementation of similar technology on seata would be very difficult, while our own solution is much simpler.
+
+## Open Source
+
+In summary, in the three important aspects of development, namely simplicity and easiness to use, multi-language support, and reduction of business burden, our dtm solution is very good and stands out compared to other solutions we researched.
+This is the reason why we decided to develop our own distributed transaction solution.
+Comparison between dtm can seata can be seen here [DTM vs SEATA](. /other/opensource).
+
+Since our experience in practice shows that dtm is really excellent, can greatly reduce the threshold of using distributed transactions, and can solve many problems that cannot be solved in the market, we open source it to feed the open source community.
