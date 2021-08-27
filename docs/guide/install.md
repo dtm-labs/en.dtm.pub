@@ -1,14 +1,15 @@
-# 安装
+# Installation
 
-DTM包含服务和客户端SDK两部分，我们先看服务的安装
+DTM is comprised of two parts, the service and the client SDK.
+Let's look at the service installation first.
 
-## docker方式安装
+## Installation via docker  
 
-这种方式安装，对于其他语言栈启动dtm非常友好
+This way of installation is very friendly for other language stacks to start DTM.
 
-您首先需要[安装docker 18+](https://docs.docker.com/get-docker/)
+You first need to [install docker 18+](https://docs.docker.com/get-docker/)
 
-然后运行下面命令
+Then run the following command
 
 ``` bash
 git clone https://github.com/yedf/dtm
@@ -16,58 +17,59 @@ cd dtm
 docker-compose up
 ```
 
-## go语言方式安装
+## Installation via go 
 
-这种方式安装，对于用go语言深入研究dtm的开发人员非常友好，能够方便开发人员运行所有的例子，调试跟踪所有代码的运行
+This way of installation is very friendly for developers who would like to study dtm in depth using go language.
+It is easy for developers to run all the examples, and debug and trace the running of all the code.
 
-### 准备工作
+### Preparation
 
-首先您需要先[安装go 1.15+](https://golang.google.cn/)
+First you need to [install go 1.15+](https://golang.google.cn/)
 
-然后运行下面命令
+Then run the following command
 
 ``` bash
 git clone https://github.com/yedf/dtm
 cd dtm
 ```
 
-dtm依赖于mysql，您可以以下两种方式，选择一个进行安装:
+dtm depends on mysql and you can install it in one of the following two ways:
 
-### 手动安装mysql(可选)
+### Manually install mysql (optional)
 
-手动[安装mysql](https://www.mysql.com/)
+Manually [install mysql](https://www.mysql.com/)
 
-填写mysql相关配置
+Fill in mysql related configuration
 
 ``` bash
-cp conf.sample.yml conf.yml # 修改conf.yml
+cp conf.sample.yml conf.yml # Modify conf.yml
 ```
 
-### docker安装mysql(可选)
+### docker install mysql (optional)
 
-您首先需要[安装docker 18+](https://docs.docker.com/get-docker/)
+You first need to [install docker 18+](https://docs.docker.com/get-docker/)
 
-然后运行下面命令
+Then run the following command
 
 ``` bash
 docker-compose -f aux/compose.mysql.yml up
 ```
 
-#### 启动
+### start
 
-最常见的是准备数据并启动
+The most common is to prepare the data and start
 
 ``` bash
 go run app/main.go
 ```
 
-也可以准备数据，启动并运行一个saga示例
+You can also prepare the data, start and run a saga example
 
 ``` bash
 go run app/main.go saga
 ```
 
-也可以单纯启动，不准备数据
+You can also just start it without preparing data
 
 ``` bash
 go run app/main.go dtmsvr
