@@ -1,43 +1,51 @@
-# 接口协议
+# Interface protocols
 
-## 角色间通信协议
+## Inter-role communication protocols
 
-目前dtm只支持了http和grpc协议。由于分布式事务涉及多个角色协作，某些参与者可能出现暂时不可用，需要重试；某些参与者明确告知失败，需要进行回滚。
+Currently, dtm only supports http and grpc protocols. 
+Since distributed transactions involve multiple roles collaborating, some participants may appear temporarily unavailable and need to retry; some participants are explicitly informed of the failure and need to be rolled back.
 
 ### HTTP
 
-下面对各种情况进行分类说明，定义各类情况的返回值。接口类似微信/支付宝订单成功回调的接口，如果接口返回的结果中，包含SUCCESS，则表示成功；如果接口返回的结果中，包含FAILURE，则表示失败; 其他则表示出错，需要进行重试。
+The following is a breakdown of the various cases, defining the return values for each type of case. 
+Interface is similar to the WeChat/Alipay order callback interface: if the interface returns a result containing SUCCESS, it means success; if the interface returns a result containing FAILURE, it means failure; others indicate an error and need to retry.
 
-上面的架构图中，主要有以下几类接口：
+In the above architecture diagram, there are mainly the following types of interfaces:
 
-AP调用TM的接口，主要为全局事务注册、提交，子事务注册等：
-  - 成功: { dtm_result: "SUCCESS" }
-  - 失败: { dtm_result: "FAILURE" }，表示这个请求状态不对，例如已经走fail的全局事务不允许再注册分支
-  - 其他表示状态不确定，可重试
+AP calls the interface of TM, mainly for global transaction registration, commit, subtransaction registration, etc:
+  - Success: { dtm_result: "SUCCESS" }
+  - Fail: { dtm_result: "FAILURE" }, indicating that the status of the request is not correct, e.g. a global transaction that has gone FAIL is not allowed to register branches again
+  - Others indicate that the status is uncertain and can be retried
 
-TM调用RM的接口，主要为二阶段的提交、回滚，以及saga的各分支
-  - 成功: { dtm_result: "SUCCESS" }，表示这个接口调用成功，正常进行下一步操作
-  - 失败: { dtm_result: "FAILURE" }，表示这个接口调用失败，全局事务需要进行回滚。例如saga中的正向操作如果返回FAILURE，则整个saga事务失败回滚
-  - 其他结果则重试，一直重试，直到返回上述的两个结果之一
+TM calls the RM interface, mainly for the two-stage commit, rollback, and the branches of saga
+  - Success: { dtm_result: "SUCCESS" }, means that the interface call was successful and the next step will be performed normally
+  - Failure: { dtm_result: "FAILURE" }, means that the interface call failed and the global transaction needs to be rolled back. For example, if a forward operation in saga returns FAILURE, the entire saga transaction fails to roll back.
+  - The other result indicates further retrial, and TM keeps retrying until it returns one of the above two results
 
-AP调用RM的接口，跟业务相关，主要是被TCC、XA两种模式调用。考虑到许多微服务的治理，都有失败重试的机制，因此建议接口设计如下
-  - 成功: { dtm_result: "SUCCESS" }，表示这个接口调用成功，正常进行下一步操作。返回的结果可以额外包含其他业务数据。
-  - 失败: { dtm_result: "FAILURE" }，表示这个接口调用失败，全局事务需要进行回滚。例如tcc中的Try动作如果返回FAILURE，则整个tcc全局事务回滚
-  - 其他返回值，应当允许重试，重试如果还是失败，需要允许全局事务回滚。主要是因为TCC、XA事务的下一步操作不保存在数据库，而是在AP里，它需要及时响应用户，无法长时间等待故障恢复。
+AP calls RM's interface, which is business related, and mainly called in two modes, TCC and XA. 
+Considering that many microservices are governed by a failure retry mechanism, it is recommended that the interface be designed as follows:
+  - success: { dtm_result: "SUCCESS" }, indicating that this interface call is successful and the next operation is performed normally. 
+    The returned result can additionally contain other business data.
+  - Failure: { dtm_result: "FAILURE" }, meaning that the interface call failed and the global transaction needs to be rolled back. 
+    For example, if the Try action in tcc returns FAILURE, the entire tcc global transaction is rolled back
+  - Other return values, should be allowed to retry.
+    If further retry still fails, thw design should allow the global transaction to rollback. 
+    Mainly because the next operation of the TCC or XA transaction is not saved in the database, but in the AP, it needs to respond to the user in a timely manner, and can not wait a long time for failure recovery.
 
-::: tip 接口数据注意点
-dtm框架通过resp.String()是否包含SUCCESS/FAILURE来判断成功和失败，因此请避免在子事务接口返回的业务数据里包含这两个词。
+::: tip interface data notes
+dtm checks if resp.String() contains SUCCESS/FAILURE to determine success and failure, so please avoid including these two words in the business data returned by the subtransaction interface.
 :::
 
 ### GRPC
 
-由于GRPC为强类型协议，并且定义好了各个错误状态码，并且能够定义不同的错误码，采用不同的重试策略，因此GRPC的协议如下：
-- Aborted: 表示失败需要回滚，对应上述http协议中的{ dtm_result: "FAILURE" }，
-- OK: 表示调用成功，对应上述http协议中的{ dtm_result: "SUCCESS" },可以进行下一步
-- 其他错误吗：状态未知，可重试
+Since GRPC is a strongly typed protocol and has defined individual error status codes and is able to define different error codes with different retry strategies, the GRPC protocol is as follows.
+- Aborted: indicates failure and needs to be rolled back, corresponding to { dtm_result: "FAILURE" } in the above http protocol.
+- OK: means the call was successful, corresponding to { dtm_result: "SUCCESS" } in the above http protocol, you can proceed to the next step
+- Other errors?: Status unknown, can retry
 
-AP调用TM的接口，主要为全局事务注册、提交，子事务注册等：
-- 无返回值，仅判断error 为nil、为Aborted、其他
+AP calls the interface of TM, mainly for global transaction registration, commit, subtransaction registration, etc:
+- No return value.
+  Check error to see if it is nil, Aborted, or other
 
 ``` go
 type DtmServer interface {
@@ -46,13 +54,14 @@ type DtmServer interface {
 }
 ```
 
-TM调用RM的接口，主要为二阶段的提交、回滚，以及saga的各分支
-- 无返回值，仅判断error 为nil、为Aborted、其他
-- 调用参数为dtmgrpc.BusiRequest，里面包含BusiData，AP传递给TM的数据，会透明传给RM
+TM calls RM's interface, mainly for two-stage commit, rollback, and each branch of saga
+- No return value.
+  Check error if it is nil, Aborted, or other
+- the argument dtmgrpc.BusiRequest, which contains BusiData, is the data passed to TM by AP, and will be transparently passed to RM
 ``` go
 type BusiRequest struct {
-	Info     *BranchInfo
-	Dtm      string
+	Info *BranchInfo
+	Dtm string
 	BusiData []byte
 }
 
@@ -62,21 +71,25 @@ type BusiReply struct {
 
 type BusiClient interface {
   ...
-  TransIn(ctx context.Context, in *dtmgrpc.BusiRequest, opts ...grpc.CallOption) (*emptypb.BusiReply, error)
+  TransIn(ctx context.Context, in *dtmgrpc.BusiRequest, opts ... grpc.CallOption) (*emptypb.BusiReply, error)
 ```
 
-AP调用RM的接口，跟业务相关，主要是被TCC、XA两种模式调用。返回的结果
-- 有返回值，返回值为固定的 dtmgrpc.BusiReply，应用程序需要用到数据，则需要自己Unmarshal里面的BusiData
+AP calls RM's interface, which is business related and is mainly called in two modes, TCC and XA. Returned results
+
+- dtmgrpc.BusiReply. If the application needs to use the data, it needs its own Unmarshal to parse the BusiData
+
 ``` go
 type BusiClient interface {
   ...
   TransInTcc(ctx context.Context, in *dtmgrpc.BusiRequest, opts ...grpc.CallOption) (*dtmgrpc.BusiReply, error)
 ```
 
-## 重试策略
+## Retry policy
 
-失败重试是微服务治理中，很重要的一个环节，上述http和grpc协议，能够很好的与主流的失败重试策略兼容
+Retry upon failure is a very important part of microservice governance.
+The http and grpc protocols described above are well compatible with the mainstream strategies for retry upon failure.
 
-当全局事务由于某些组件导致临时故障，那么全局事务会暂时中断，后续dtm会定时轮询一小时内超时未完成的全局事务，进行重试。多次重试则间隔每次加倍，避免雪崩。
+When the global transaction faces temporary failure caused by some components, the global transaction will be temporarily interrupted.
+Subsequently, dtm will regularly poll the global transaction that is uncompleted due to time out within one hour to retry. Intervals between sucessive retries are doubled to avoid avalanches.
 
-如果应用程序由于各类bug或故障导致全局事务在一小时内的都未进行重试，待开发人员修复bug或故障之后，可以通过手动修改dtm.trans_global中next_cron_time来触发重试。
+If the application does not retry the uncompleted global transaction within one hour, probably due to various bugs or failures, developers can manually modify the next_cron_time in dtm.trans_global to trigger a retry after they fix the bugs or failures.
