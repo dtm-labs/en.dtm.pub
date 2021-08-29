@@ -1,32 +1,44 @@
-# 代码概况
+# Code Overview
 
-## 项目组织
+## Project organization
 
-dtm项目主要有一下几个目录
+The dtm project has the following main directories
 
-- app: 下面只有一个main，是作为dtm的总入口，可以传入不同的参数，以不同的模式运行
-- common: 公共的函数与类库，包括日志、json、数据库、网络等
-- dtmcli: dtm的http客户端，包含tcc、saga、xa、msg这几种事务模式，以及子事务屏障barrier
-- dtmgrpc: dtm的grpc客户端，包含tcc、saga、xa、msg这几种事务模式，以及子事务屏障barrier
-- dtmsvr: dtm的服务端，包含http、grpc的api，各种事务模式的实现
-- examples: 包含各类的例子
-- test: 包含各种测试用例
+- app: there is only one main, which is the general entrance of dtm.
+  You can pass in different parameters to run in different modes.
 
-## 代码说明
+- common: public functions and class libraries, including logging, json, database, network, etc.
 
-go语言推荐的错误处理方式是error is a value，而不是异常的方式，因此dtmcli中提供给用户使用的接口都是符合这个标准的。
+- dtmcli: dtm's http client, including tcc, saga, xa, msg transaction modes, and subtransaction barrier
 
-但是给出的示例，使用了函数e2p，这是一个自定义的函数，将error转成了panic，虽然不符合go的规范，但是减少了错误处理的代码量，让贴出来的代码更简短，能让用户聚焦在核心演示的内容上面
+- dtmgrpc: dtm's grpc client, including the tcc, saga, xa, msg transaction modes, and subtransaction barrier 
 
-## 例子说明
+- dtmsvr: dtm's server side, including http, grpc server APIs for various transaction modes implementation
 
-在dtm中使用的例子，主要是一个转账的分布式事务，假设一个这样的场景：有一个A转账给B，但A和B属于不同银行，存储在不同的数据库里。这个场景就是一个典型的分布式事务场景。我们把这个分布式事务定义为两个子事务，一个是转出TransOut，一个是转入TransIn。
+- examples: contains various examples
 
-由于我们在后面的例子中，会常常重复调用这两个子事务，因此我们把这两个子事务的处理，单独抽出来
+- test: contains various test cases
+
+## code description
+
+The idomatic error handling method in Go is "error is a value", not exception.
+Therefore, the interfaces provided to users in dtmcli are all in line with this standard.
+
+The example given, however, uses the function e2p, which is a custom function that turns error into a panic.
+Although it does not conform to the go specification, it reduces the amount of error-handling code and makes the code snippets shorter, allowing the user to focus on the core demo content
+
+## Example description
+
+The example used in dtm is mainly a distributed transaction for a transfer. 
+Suppose a scenario where there is a transfer from A to B, but A and B belong to different banks and are stored in different databases.
+This scenario is a typical distributed transaction scenario.
+We define this distributed transaction as two subtransactions, one for the transfer out TransOut and one for the transfer in TransIn.
+
+Since we will often call these two subtransactions repeatedly in the later examples, we pull out the processing of these two subtransactions separately
 
 ### http
 
-http协议在[examples/base_http.go](https://github.com/yedf/dtm/blob/main/examples/base_http.go)里面定义TransIn、TransOut相关的各个基本操作，如下：
+The http client defines the various basic operations related to TransIn and TransOut inside [examples/base_http.go](https://github.com/yedf/dtm/blob/main/examples/base_http.go), posted as follows:
 
 ``` go
 func handleGeneralBusiness(c *gin.Context, result1 string, result2 string, busi string) (interface{}, error) {
@@ -65,7 +77,7 @@ func BaseAddRoute(app *gin.Engine) {
 
 ### grpc
 
-grpc协议在[examples/base_grpc.go](https://github.com/yedf/dtm/blob/main/examples/base_grpc.go)里面定义TransIn、TransOut相关的各个基本操作，如下：
+The grpc client defines each basic operation related to TransIn, TransOut inside [examples/base_grpc.go](https://github.com/yedf/dtm/blob/main/examples/base_grpc.go), as follows.
 
 ``` go
 func handleGrpcBusiness(in *dtmgrpc.BusiRequest, result1 string, result2 string, busi string) error {
@@ -119,53 +131,53 @@ func (s *busiServer) TransOutConfirm(ctx context.Context, in *dtmgrpc.BusiReques
 	dtmcli.MustUnmarshal(in.BusiData, &req)
 	return &emptypb.Empty{}, handleGrpcBusiness(in, MainSwitch.TransOutConfirmResult.Fetch(), "", dtmcli.GetFuncName())
 }
-
 ```
-### 例子小结
 
-上述代码中，后缀为Confirm的，会被Tcc事务模式调用，后缀为Revert会被Tcc的Cancel、SAGA的compensate调用，CanSubmit会被事务消息调用
+### Example Summary
 
-另外MainSwitch用于辅助测试，用于模拟各种故障
+In the above code, functions suffixed with Confirm will be called by Tcc transaction mode, those suffixed with Revert called by Tcc's Cancel and SAGA's compensate, and those suffixed with CanSubmit called by the transaction message.
 
-## 各语言客户端
+In addition, MainSwitch is used for auxiliary testing, for simulating various failures.
+
+## Client for each language
 
 ### go
-客户端sdk: [https://github.com/yedf/dtmcli](https://github.com/yedf/dtmcli)
+Client sdk: [https://github.com/yedf/dtmcli](https://github.com/yedf/dtmcli)
 
-示例: [https://github.com/yedf/dtmcli-go-sample](https://github.com/yedf/dtmcli-go-sample)
+Example: [https://github.com/yedf/dtmcli-go-sample](https://github.com/yedf/dtmcli-go-sample)
 
 ### dotnet
 
-客户端sdk（当前只支持TCC）: [https://github.com/yedf/dtmcli-csharp](https://github.com/yedf/dtmcli-csharp)
+Client sdk (currently only supports TCC): [https://github.com/yedf/dtmcli-csharp](https://github.com/yedf/dtmcli-csharp)
 
-示例: [https://github.com/yedf/dtmcli-csharp-sample](https://github.com/yedf/dtmcli-csharp-sample)
+Example: [https://github.com/yedf/dtmcli-csharp-sample](https://github.com/yedf/dtmcli-csharp-sample)
 
-感谢 [geffzhang](https://github.com/geffzhang)的帮助，C的sdk和示例，全部由[geffzhang](https://github.com/geffzhang)独立贡献
+Thanks to [geffzhang](https://github.com/geffzhang) for help with the C sdk and examples, all contributed independently by [geffzhang](https://github.com/geffzhang)
 
 ### python
 
-客户端sdk（当前支持TCC、SAGA、子事务屏障）: [https://github.com/yedf/dtmcli-py](https://github.com/yedf/dtmcli-py)
+Client sdk (currently supports TCC, SAGA, subtransaction barriers): [https://github.com/yedf/dtmcli-py](https://github.com/yedf/dtmcli-py)
 
-示例: [https://github.com/yedf/dtmcli-py-sample](https://github.com/yedf/dtmcli-py-sample)
+Example: [https://github.com/yedf/dtmcli-py-sample](https://github.com/yedf/dtmcli-py-sample)
 
 ### Java
 
-客户端sdk（当前只支持TCC）: [https://github.com/yedf/dtmcli-java](https://github.com/yedf/dtmcli-java)
+Client sdk (currently only supports TCC): [https://github.com/yedf/dtmcli-java](https://github.com/yedf/dtmcli-java)
 
-示例: [https://github.com/yedf/dtmcli-java-sample](https://github.com/yedf/dtmcli-java-sample)
+Example: [https://github.com/yedf/dtmcli-java-sample](https://github.com/yedf/dtmcli-java-sample)
 
-感谢 [viticis](https://github.com/viticis)的帮助，Java的sdk和示例，全部由[viticis](https://github.com/viticis)独立贡献
+Thanks to [viticis](https://github.com/viticis) for help with the Java sdk and examples, all contributed independently by [viticis](https://github.com/viticis)
 
 ### php
 
-客户端sdk（当前只支持TCC）: [https://github.com/yedf/dtmcli-php](https://github.com/yedf/dtmcli-php)
+Client sdk (currently only supports TCC): [https://github.com/yedf/dtmcli-php](https://github.com/yedf/dtmcli-php)
 
-示例: [https://github.com/yedf/dtmcli-php-sample](https://github.com/yedf/dtmcli-php-sample)
+Example: [https://github.com/yedf/dtmcli-php-sample](https://github.com/yedf/dtmcli-php-sample)
 
-感谢 [onlyshow](https://github.com/onlyshow) 的帮助，php的sdk和示例，全部由[onlyshow](https://github.com/onlyshow)独立完成
+Thanks to [onlyshow](https://github.com/onlyshow) for help with the php sdk and examples, all done independently by [onlyshow](https://github.com/onlyshow)
 
 ### node
 
-客户端sdk（当前只支持TCC）: [https://github.com/yedf/dtmcli-node](https://github.com/yedf/dtmcli-node)
+Client sdk (currently only supports TCC): [https://github.com/yedf/dtmcli-node](https://github.com/yedf/dtmcli-node)
 
-示例: [https://github.com/yedf/dtmcli-node-sample](https://github.com/yedf/dtmcli-node-sample)
+Example: [https://github.com/yedf/dtmcli-node-sample](https://github.com/yedf/dtmcli-node-sample)
