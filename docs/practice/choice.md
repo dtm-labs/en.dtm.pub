@@ -1,16 +1,43 @@
-# 如何选择事务模式
+# How to choose a transaction model
 
-## 特性对比
+## Feature comparison among different transaction models
 
-- xa事务模式: 用户还可以按照原有的业务逻辑编写，只需要在外层接入即可，缺点是，锁数据的时间很长，并发上不去
-- tcc事务模式: 用户需要提供Try/Confirm/Cancel，不锁数据，并发较高；支持子事务嵌套
-- saga模式: 用户需要提供action/compensate，不锁数据，并发较高。同时所有的事务状态存储在服务器，程序崩溃不会导致回滚。
-- 事务消息模式: 用户无需编写补偿操作，但是需要提供反查接口
+- XA. 
+  Using this model, users can develop following their original business logic, and only need to adapt in the outer layer.
+  The disadvantage is that the data lock takes a very long time, leading to poor concurrency.
 
-## 应用场景
+- TCC.
+  Using this model, users need to provide Try/Confirm/Cancel.
+  There is no data lock, allowing high concurrency.
+  Furthermore, nested subtransactions is supported.
 
-- 假设您有一个活动页面，领取一个月会员和一张优惠券，这里的领取会员以及优惠券是不会失败的，这种情况会适合采用事务消息的简化版，可以定义好包含领取会员、领取优惠券的消息，然后直接Submit，不走Prepare。
-- 假设您有一个注册用户赠送一个月会员和一张优惠券的服务，这种情况会适合采用事务消息，在注册用户的事务中，可以定义好包含领取会员、领取优惠券的消息，然后Prepare，事务提交之后，Submit。
-- 假设您有一个分布式事务，需要调用一个银行转账的接口，该接口会耗时很久，这个场景适合SAGA。因为耗时较久，适合将整个事务的所有步骤存储在服务器，避免应用程序崩溃导致回滚。
-- 假设您有一个订单业务，会根据商品信息调用不同的子事务，而且可能出现嵌套。那么它适合Tcc，因为应用对Tcc的控制最灵活，而且支持子事务嵌套
-- 假设您的业务，对并发性要求不高，那么可以选用XA。
+- SAGA.
+  Using this model, users need to provide action/compensation.
+  There is no data lock, allowing high concurrency. 
+  Furthermore, all transaction states are stored on the server, which means application crashes do not lead to rollback.
+
+- Transactional Message.
+  Using this model, users do not need to write compensation operations, but need to provide a check interface.
+
+## Typical scenario
+
+- Suppose you have a promotion page where people can receive membership of a month and also a coupon.
+  In this situation, receiving the membership and the coupon will not fail.
+  It is suitable to use a simplified version of the Transaction Message model.
+  All you need to do is to define the message that contains receiving the membership and the coupon.
+  Then, submit without calling Prepare.
+
+- Suppose you have a registration service that gives membership of one month and also a coupon to the newly-registered user.
+  For this situation, it is suitable to use the Transaction Message model.
+  In the user registeration transaction, define the message that contains the membership and coupon collection.
+  Prepare and, after the transaction is committed, call Submit.
+
+- Suppose you have a distributed transaction that needs to call a bank transfer interface, and suppose the interface will take a long time.
+  For this situation, it is suitable to use the SAGA model.
+  Because the whole process takes a long time, it is suitable to store the states of all the steps of the whole transaction in the server side, which means application crashes do not lead to rollback.
+
+- Suppose you have an order-related business that invokes different subtransactions based on item information, where nesting may occur. 
+  For this situation, it is suitable to use the TCC model, because the application has the most flexible control over TCC and nested subtransaction is supported.
+
+- If your business does not require high concurrency, it is fine to use the XA model.
+
