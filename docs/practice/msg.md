@@ -1,31 +1,35 @@
-# 事务消息模式
+# Transactional Messaging
 
-事务消息提供了支持事务的消息接口，允许使用方把消息发送放到本地的一个事务里，保证事务的原子性。它的工作原理如下：
+Transactional Messaging provides a transaction-enabled messaging interface, with which applications can send messages within the context of a local transaction to guarantee the atomicity of the global transaction.
+It works as follows:
 
-本地应用
+Local application
 
-- 开启本地事务
-- 进行本地数据库修改
-- 调用消息事务的prepare接口，预备发送消息
-- 提交本地事务
-- 调用消息事务的submit接口，触发消息发送
+- Open a local transaction
+- Make changes to the local database
+- Call the Prepare interface of Transactional Messaging to send the prepare message to the transaction manager
+- Commit the local transaction
+- Call the Submit interface of Transactional Messaging to send the submit message to the transaction manager
 
-当事务管理器，只收到prepare请求，超时未收到submit请求时，调用反查接口canSubmit，询问应用程序，是否能够发送。
+When the transaction manager receives only a prepare message but no subsequent submit message within the time frame, it calls the canSubmit Check interface of Transactional Messaging which asks the application if the global transaction can be committed.
 
-事务消息与本地消息方案类似，但是将创建本地消息表和轮询本地消息表的操作换成了一个反查接口，提供更加便捷的使用。
+Transactional Messaging is similar to the local messaging solution.
+The difference is that the operations of creating and polling the local message table are replaced with a Check interface which is easier to use.
 
-假定一个这样的场景，用户注册成功后，需要给用户赠送优惠券和一个月会员卡。这里赠送优惠券和一个月会员一定不会失败，这种情况就非常适合可靠消息事务模式。
+Suppose a scenario where a coupon and a membership of one-month are given to a user after successful registration. 
+Since the coupon and one-month membership must not fail, this scenario is perfect for the reliable Transaction Messaging model.
 
-## 成功的事务消息
+## Successful transactional message
 
-我们拿跨行转账作为例子，一个成功的事务消息分布式事务时序图如下：
+Let's take an inter-bank transfer as an example. 
+The timing diagram for a successful transactional message within the context of distributed transaction is shown as follows:
 
 ![msg_normal](../imgs/msg_normal.jpg)
 
-我们通过dtm来完成一个普通的事务消息分布式事务
+Let's complete this distributed transaction using transactional message in DTM:
 
 ### http
-[examples/http_msg](https://github.com/yedf/dtm/blob/main/examples/http_msg.go)：
+[examples/http_msg](https://github.com/yedf/dtm/blob/main/examples/http_msg.go):
 
 ``` go
 	logrus.Printf("a busi transaction begin")
@@ -52,12 +56,15 @@
 	err := msg.Submit()
 ```
 
-上面的代码首先创建了一个事务消息，然后添加了两个子事务TransOut、TransIn，然后在本地事务里内部调用prepare，本地事务提交之后，调用submit。Submit之后，dtm就会调用相关的子事务，保证最终完成。
+In the above code, a transactional message is created first.
+Two subtransactions, namely TransOut and TransIn, are added to the transactional message.
+The local transaction internally calls the Prepare interface.
+After the local transaction is committed, it calls the Submit interface. 
+After DTM receives the submit message, it calls the relevant subtransaction to ensure final completion.
 
-## 超时反查
+## Timeout check
 
-如果应用程序在调用Prepare之后，Submit之前崩了，那么dtm会调用反查接口，反查返回成功的时序图如下：
+If the application crashes after it calls Prepare but before it can call Submit, DTM will call the Check interface.
+The timing diagram for a successful check is as follows:
 
 ![msg_query](../imgs/msg_query.jpg)
-
-
