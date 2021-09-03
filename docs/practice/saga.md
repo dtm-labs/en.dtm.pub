@@ -1,27 +1,31 @@
-# SAGA事务模式
+# SAGA
 
-SAGA最初出现在1987年Hector Garcaa-Molrna & Kenneth Salem发表的论文[SAGAS](https://www.cs.cornell.edu/andru/cs711/2002fa/reading/sagas.pdf)里。其核心思想是将长事务拆分为多个本地短事务，由Saga事务协调器协调，如果正常结束那就正常完成，如果某个步骤失败，则根据相反顺序一次调用补偿操作。
+SAGA originally appeared in the paper [SAGAS](https://www.cs.cornell.edu/andru/cs711/2002fa/reading/sagas.pdf) published by Hector Garcia-Molina and Kenneth Salem in 1987. 
+The key idea is to write a long-lived transaction as multiple short local transactions, collectively termed as a SAGA and coordinated by the SAGA transaction coordinator.
+If all subtransactions of a SAGA complete, the SAGA completes sucessfully.
+If one substranction fails, the compensating transactions will be invoked one at a time in the reverse order.
 
-如果我们要进行一个类似于银行跨行转账的业务，转出（TransOut）和转入（TransIn）分别在不同的微服务里，一个成功完成的SAGA事务典型的时序图如下：
+Suppose we want to perform an inter-bank transfer.
+The operations of transfer out (TransOut) and transfer in (TransIn) are coded in separate microservices.
+A typical timing diagram for a successfully completed SAGA transaction would be as follows:
 
 ![saga_normal](../imgs/saga_normal.jpg)
 
+## Simple SAGA
 
-## 简单的SAGA
-
-我们来完成一个最简单的SAGA：
+Let's complete one of the simplest SAGA:
 
 ### http
 
 ``` go
-req := &gin.H{"amount": 30} // 微服务的载荷
-// DtmServer为DTM服务的地址
+req := &gin.H{"amount": 30} // load of microservice
+// DtmServer is the address of the DTM service
 saga := dtmcli.NewSaga(DtmServer, dtmcli.MustGenGid(DtmServer)).
-  // 添加一个TransOut的子事务，正向操作为url: qsBusi+"/TransOut"， 逆向操作为url: qsBusi+"/TransOutCompensate"
+  // Add the subtransaction of TransOut. The forward action is url: qsBusi+"/TransOut", while the compensating action is url: qsBusi+"/TransOutCompensate"
   Add(qsBusi+"/TransOut", qsBusi+"/TransOutCompensate", req).
-  // 添加一个TransIn的子事务，正向操作为url: qsBusi+"/TransIn"， 逆向操作为url: qsBusi+"/TransInCompensate"
+  // Add the subtransaction of TransIn. The forward action is url: qsBusi+"/TransIn", while the compensating action is url: qsBusi+"/TransInCompensate"
   Add(qsBusi+"/TransIn", qsBusi+"/TransInCompensate", req)
-// 提交saga事务，dtm会完成所有的子事务/回滚所有的子事务
+// commit saga transaction to DTM, which guarantees all subtransactions either complete or rollback
 err := saga.Submit()
 ```
 
@@ -36,26 +40,31 @@ saga := dtmgrpc.NewSaga(DtmGrpcServer, gid).
 err := saga.Submit()
 ```
 
-上面的代码首先创建了一个SAGA事务，然后添加了两个子事务TransOut、TransIn，每个子事务包括action和compensate两个分支，分别为Add函数的第一第二个参数。子事务定好之后提交给dtm。dtm收到saga提交的全局事务后，会调用所有子事务的正向操作，如果所有正向操作成功完成，那么事务成功结束。
+In the above code, a SAGA transaction is first created, and then two subtransactions, TransOut and TransIn, are added.
+Each of the two subtransactions includes two branches, the forwarding action and the compensating action, given as the first and second arguments of the Add function, respectively.
+After the subtransactions are added, the SAGA is submitted to DTM. 
+DTM receives the global SAGA transaction and runs the forward operations of all subtransactions.
+If all the forward operations complete successfully, the SAGA transaction completes successfully.
 
-### 失败回滚
+### Rollback upon failure 
 
-如果有正向操作失败，那么dtm会调用各分支的反响操作，进行回滚，最后事务成功回滚。
+If any forward operation fails, DTM invokes the corresponding compensating operation of each subtransaction to roll back, after which the transaction is successfully rolled back.
 
-我们将上述的第二个分支调用，传递参数，让他失败
+Let's purposely fail the forward operation of the second subtransaction and watch what happens
 
 ``` go
   Add(qsBusi+"/TransIn", qsBusi+"/TransInCompensate", &TransReq{Amount: 30, TransInResult: "FAILURE"})
 ```
 
-失败的时序图如下：
+The timing diagram for the intended failure is as follows:
 
 ![saga_rollback](../imgs/saga_rollback.jpg)
 
+## Advanced SAGA
 
-## 高级SAGA
+There is a lot of SAGA strategies inside the original paper, including two recovery strategies, as well as parallel SAGAs.
+Our discussion above only addresses the simplest SAGA.
 
-论文里面的SAGA内容较多，包括两种恢复策略，包括分支事务并发执行，我们这里的讨论，仅包括最简单的SAGA。
+For advanced usage of SAGA, such as parallel SAGAs, DTM will add support in future.
 
-对于SAGA的高级用法，例如分支事务并发执行，后续dtm会开发支持
 
