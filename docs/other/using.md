@@ -1,10 +1,10 @@
-# 谁在用
+# Who is using
 
-如果您正在使用dtm，请帮忙在[这个链接](https://github.com/yedf/dtm/issues/7)添加一个评论，帮助我们更好的改进dtm。
+If you are using dtm, please help to add a comment at [this link](https://github.com/yedf/dtm/issues/7) to help us improve dtm even more.
 
-## 谁在使用
+## Who is using
 
-下面仅包含部分使用者
+The following contains only some of the users
 
 <div style='vertical-align: middle'>
     <img alt='镜小二' height='40'  src='https://img.epeijing.cn/official-website/assets/logo.png'  />
