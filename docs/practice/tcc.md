@@ -1,20 +1,29 @@
-# TCC事务模式
-什么是TCC，TCC是Try、Confirm、Cancel三个词语的缩写，最早是由 Pat Helland 于 2007 年发表的一篇名为《Life beyond Distributed Transactions:an Apostate’s Opinion》的论文提出。
+# TCC
 
-## TCC组成
-TCC分为3个阶段
+TCC is an acronym for Try, Confirm, Cancel, and was first proposed by Pat Helland in 2007 in the paper called "Life beyond Distributed Transactions: an Apostate's Opinion".
 
-- Try 阶段：尝试执行，完成所有业务检查（一致性）, 预留必须业务资源（准隔离性）
-- Confirm 阶段：如果所有分支的Try都成功了，则走到Confirm阶段。Confirm真正执行业务，不作任何业务检查，只使用 Try 阶段预留的业务资源
-- Cancel 阶段：如果所有分支的Try有一个失败了，则走到Cancel阶段。Cancel释放 Try 阶段预留的业务资源。
+## Workflow
 
-如果我们要进行一个类似于银行跨行转账的业务，转出（TransOut）和转入（TransIn）分别在不同的微服务里，一个成功完成的TCC事务典型的时序图如下：
+TCC is divided into 3 phases
+
+- Try phase: The requestor requests the service provider to perform a tentative operation.
+  The provider shall complete all business validations (consistency), and reserve required business resources (quasi-isolation).
+
+- Confirm phase: If the provider completes the Try phase successfully, the requestor can execute a confirmation operation on the provider if it decides to move forward.
+  The Confirm phase is where the business is actually conducted.
+  No more business validations will be performed, and only those business resources reserved in the Try phase will be used.
+
+- Cancel phase: The requestor can execute a cancellation operation on the provider if it decides not to move forward, e.g., when the provider does not complete the Try phase successfully.
+  Business resources reserved in the Try phase should be released in the Cancel phase.
+
+Suppose we want to perform an inter-bank transfer, using TransOut and TransIn implemented in separate microservices.
+A typical timing diagram for a successfully completed transaction using the TCC transaction model is as follows:
 
 ![tcc_normal](../imgs/tcc_normal.jpg)
 
-## 简单的TCC
+## Simple TCC
 
-我们来完成一个最简单的TCC：
+Let's complete one of the simplest TCC:
 
 ### http
 ``` go
@@ -41,43 +50,48 @@ err := dtmgrpc.TccGlobalTransaction(DtmGrpcServer, gid, func(tcc *dtmgrpc.TccGrp
 })
 ```
 
-调用TccGlobalTransaction会开启一个全局的tcc事务。他的声明如下：
+The call to TccGlobalTransaction opens a global transaction using the TCC transaction model. 
+The function signature is as follows:
 
 ``` go
 // TccGlobalTransaction begin a tcc global transaction
-// dtm dtm服务器地址
-// gid 全局事务id
-// tccFunc tcc事务函数，里面会定义全局事务的分支
+// dtm dtm server address
+// gid global transaction id
+// tccFunc the function representing the global transaction using the TCC transaction model. The TCC workflow(s) can be invoked in tccFunc.
 func TccGlobalTransaction(dtm string, gid string, tccFunc TccGlobalFunc) error
 ```
 
-开启成功之后，会调用第三个参数传递的函数tccFunc。我们在这个函数的内部调用了CallBranch来定义了两个子事务TransOut和TransIn。
+When the global transaction starts, the content of function tccFunc will be called. 
+In the example, inside function tccFunc, we call CallBranch twice to define two subtransactions TransOut and TransIn, each built using the TCC transaction model.
 
 ``` go
 // CallBranch call a tcc branch
-// 函数首先注册子事务的所有分支，成功后调用try分支，返回try分支的调用结果
+// It first registers functions for the Try, Confirm, and Cancel phases. If the registration is successful, the function for the Try phase is called, and the result is returned.
 func (t *Tcc) CallBranch(body interface{}, tryURL string, confirmURL string, cancelURL string) (*resty.Response, error)
 ```
 
-当tccFunc正常返回时，TccGlobalTransaction会提交全局事务，然后返回给调用者。dtm收到提交请求，则会调用所有注册子事务的二阶段Confirm分支。TccGlobalTransaction返回时，一阶段的Try已经全部完成，但是二阶段的Confirm通常还未完成。
+When tccFunc returns normally, TccGlobalTransaction commits the global transaction that contains all TCC workflows, and returns to the caller. 
+DTM receives the request to commit, and calls the functions for the Confirm phase that are registered for all TCC workflows.
+When tccGlobalTransaction returns, all functions for the Try phase have completed, but those for the Confirm phase are usually not yet completed.
 
-### 失败回滚
+### Rollback upon failure
 
-如果tccFunc返回错误，TccGlobalTransaction会终止全局事务，然后返回给调用者。dtm收到终止请求，则会调用所有注册子事务的二阶段Cancel分支。
+If tccFunc returns an error, TccGlobalTransaction terminates the global transaction and returns to the caller. 
+DTM receives the request to terminate, and calls the functions for the Cancel phase that are registered for all TCC workflows.
 
-我们将上述的第二个分支调用，传递参数，让他失败
+Let's purposely fail the second TCC workflow in the global transaction by passing the argument and watch what happens.
 
 ``` go
 res2, rerr := tcc.CallBranch(&TransReq{Amount: 30, TransInResult: "FAILURE"}, Busi+"/TransIn", Busi+"/TransInConfirm", Busi+"/TransInRevert")
 ```
 
-失败的时序图如下：
+The timing diagram for failure is as follows:
 
 ![tcc_rollback](../imgs/tcc_rollback.jpg)
 
-## 嵌套的TCC
+## Nesting
 
-tcc支持嵌套的子事务，代码如下(摘自[examples/http_tcc](https://github.com/yedf/dtm/blob/main/examples/http_tcc.go))：
+DTM supports nested TCC subtransactions as shown in the following code (taken from [examples/http_tcc](https://github.com/yedf/dtm/blob/main/examples/http_tcc.go)).
 
 ``` go
 err := dtmcli.TccGlobalTransaction(DtmServer, gid, func(tcc *dtmcli.Tcc) (*resty.Response, error) {
@@ -89,7 +103,7 @@ err := dtmcli.TccGlobalTransaction(DtmServer, gid, func(tcc *dtmcli.Tcc) (*resty
 })
 ```
 
-这里的TransInTccParent子事务，里面会再调用TransIn子事务，代码如下：
+Here the TransInTccParent subtransaction will call the TransIn subtransaction, as shown in the following code:
 
 ``` go
 app.POST(BusiAPI+"/TransInTccParent", common.WrapHandler(func(c *gin.Context) (interface{}, error) {
@@ -100,10 +114,14 @@ app.POST(BusiAPI+"/TransInTccParent", common.WrapHandler(func(c *gin.Context) (i
 }))
 ```
 
-子事务嵌套时，从传入的请求中构建tcc对象，然后就能够正常使用tcc对象，进行相关的事务。
+Within the nested TCC subworkflow, the tcc object can be constructed from the incoming request, and then used normally for business operations.
 
-更多子事务嵌套的文档细节，例如相关的流程图，待补充
+More documentation of nested TCC, including the timing diagrams, will be added in future.
 
-### 小结
+### Summary
 
-在本节的教程中，我们简单介绍了TCC的理论知识，也通过几个例子，完整给出了编写一个TCC事务的过程，涵盖了正常成功完成，以及失败回滚的情况。另外还演示一个嵌套子事务。
+In this section of the tutorial, we have briefly introduced the TCC transaction model.
+After describing the theory of TCC, we gave an overall picture of how to write a global transaction using TCC with several examples, covering both normal successful completion and failure rollback scenarios. 
+Nested TCC is also demonstrated.
+
+
