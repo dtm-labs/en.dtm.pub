@@ -1,23 +1,24 @@
-# 直接部署
+# Direct deployment
 
-## 获取二进制文件
+## Get binaries
 
-dtm暂不支持apt/yum/brew等方式直接安装，您需要通过go环境，编译出相关的二进制文件，因此不是很推荐这种方式部署。
+dtm does not support direct installation by apt/yum/brew.
+You need to compile the binaries through go environment, so it is not recommended to deploy this way.
 
-## 编译
+## Compile
 
-您需要有go 1.15以上的环境，通过下面命令编译出二进制文件
+You need to have a go 1.15 or higher environment to compile the binaries with the following command
 ```
 go build -o dtm app/main.go
 ```
 
-## 配置
+## Configuration
 
-您可以设置相关的环境变量(参见[部署基础](./base))，也可以在工作目录下，参考[配置样板文件](https://github.com/yedf/dtm/blob/main/conf.sample.yml)创建conf.yml文件
+You can set the relevant environment variables (see [Deployment Basics](./base)), or you can create a conf.yml file in your working directory, referring to [configuration sample file](https://github.com/yedf/dtm/blob/main/conf.sample.yml)
 
-## 启动
+## Start
 
-dtm会监听8080端口
+dtm will listen to port 8080
 
 ```
 ./dtm dtmsvr
