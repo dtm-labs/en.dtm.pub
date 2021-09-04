@@ -1,25 +1,30 @@
-# 运维
+# Operation and Maintenance
 
-## 报警
+## Alarm
 
-正常情况下，全局事务会很快结束，结果在dtm.trans_global的status记录为succeed/failed，即使出现临时的网络问题等，通常也会在一两次重试之后，最终结束。
-
-如果重试次数超过3，通常意味着异常情况，最好能够监测起来，建议的查询条件为：
+Under normal circumstances, the global transaction ends quickly and the result will be recorded as succeed/failed in the status of dtm.trans_global. 
+Even if there are temporary network problems, etc., the global transaction usually ends after one or two retries.
+If the number of retries exceeds 3, it usually means an abnormal situation and it is better to monitor it. 
+The suggested query conditions are
 
 ``` SQL
 select * from dtm.trans_global where status not in ('succeed', 'failed') and
   create_time between date_add(now(), interval -3600 second) and date_add(now(), interval -120 second)
 ```
 
-## 触发全局事务立即重试
+## Trigger global transaction to retry immediately
 
-dtm会轮询数据库中超时时间在近一小时内的未完成的全局事务，不在这个范围内的，dtm不检查。如果您想要手动触发立即重试，您可以手动把相应事务的next_cron_time修改为当前时间，就能触发重试。
+dtm polls the database for outstanding global transactions which timed out within the last hour. 
+dtm does not check for those that are not in this range. 
+If you want to trigger immediate retries manually, you can manually change the next_cron_time of the corresponding transaction to the current time to trigger retries.
 
-dtm对每个事务的重试间隔是每失败一次，间隔加倍，避免过多的重试，导致系统负载异常上升。
+The retry interval of dtm for each transaction is doubled for each failure, to avoid too many retries, which will cause the system load to rise abnormally.
 
-有以下场景可以用到立即重试：
+There are the following scenarios where immediate retry can be used.
 
-- 某个业务出现bug，导致事务重试多次未完成，重试间隔数值已经很大。修复bug后，需要dtm立即重试未完成的事务
-- dtm宕机，或者dtm依赖的数据库宕机，并且宕机时间超过1小时，此时未完成的全局事务已不再dtm自动轮询的范围内了
+- A business has a bug, which causes the transaction to retry several times without completing, and the retry interval value is already large. 
+  After fixing the bug, dtm needs to retry the incomplete transaction immediately
+  
+- If dtm is down, or the database that dtm depends on is down, and the downtime is more than 1 hour, the uncompleted global transactions are no longer within the scope of dtm auto-polling.
 
-手动把相应事务的next_cron_time修改为当前时间后，会在数秒内被定时轮询
+If you manually change the next_cron_time of the corresponding transaction to the current time, it will be polled within a few seconds.
