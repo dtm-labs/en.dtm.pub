@@ -1,37 +1,41 @@
-# 异常情况
+# Exceptions
 
-## 异常分类
+## Exception categories
 
-下面以TCC事务说明这些异常情况：
+Common exceptions are illustrated using the TCC transaction model:
 
-**空回滚：**
+**Empty Rollback:**
 
-　　在没有调用 TCC 的 Try 方法的情况下，调用了二阶段的 Cancel 方法。Cancel 方法需要识别出这是一个空回滚，然后直接返回成功。
+The second-stage Cancel method is called without calling the Try method of TCC.
+The Cancel method needs to recognize that this is an empty rollback and then return success directly.
 
-**幂等**：
+**Idempotent:**
 
-　　由于任何一个请求都可能出现网络异常，出现重复请求，所以所有的分布式事务分支，都需要保证幂等性
+Since any one request can have network exceptions and duplicate requests happen, all distributed transaction branches need to guarantee idempotency.
 
-**悬挂：**
+**Suspension:**
 
-　　悬挂就是对于一个分布式事务，其二阶段 Cancel 接口比 Try 接口先执行。Try 方法需要识别出这是一个悬挂，然后直接返回失败。
+A suspension is a distributed transaction for which the second-stage Cancel interface is executed before the Try interface.
+The Try method needs to recognize that this is a suspension and return a direct failure.
 
-## 异常原因
+## Causes of Exceptions
 
-下面看一个网络异常的时序图，更好的理解上述几种问题
+See below a timing diagram of a network exception to better understand the above types of problems
 
 ![exception](../imgs/exception.jpg)
 
-- 业务处理请求4的时候，Cancel在Try之前执行，需要处理空回滚
-- 业务处理请求6的时候，Cancel重复执行，需要幂等
-- 业务处理请求8的时候，Try在Cancel后执行，需要处理悬挂
+- When the business processes request 4, Cancel is executed before Try, resulting into null rollback that needs addressing
 
-## 异常难题
+- When business processing request 6, Cancel is executed repeatedly and needs to be handled in an idempotent manner
 
-面对上述复杂的网络异常情况，目前看到各个分布式事务框架给出的建议方案主要是：
+- When business processing request 8, Try is executed after Cancel, resulting into suspension that needs addressing
 
-> 业务方通过唯一键，查询相关联的操作是否已完成，如果已完成则直接返回成功。
+## Exception problems
 
-对于上述方案，每个业务都需要单独处理，相关的判断逻辑较复杂，易出错，业务负担重，是落地分布式事务的痛点。
+In the face of the above complex network anomalies, the proposed solutions given by various distributed transaction frameworks are currently seen to be mainly the following:
 
-我们将在下一节提出dtm独创的方案。
+> The business side queries whether the associated operation has been completed by a unique key, and returns success directly if it has been completed.
+
+For the above scheme, each business needs to be handled separately, and the related judgment logic is more complex, error-prone and business-loaded, which is a pain point for landing distributed transactions.
+
+We will present dtm's original solution in the next section.
