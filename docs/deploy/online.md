@@ -1,12 +1,16 @@
-# 线上部署
+# Online deployment
 
-## dtm副本数
+## The number of dtm replicas
 
-dtm本身类似于一个普通的无状态应用，数据都存储在数据库中。因此dtm可以像普通应用一样，部署多个副本。建议的副本数量为2~3，这样就具备了高可用的特性。随着负载升高，可以增加dtm的副本数，增加dtm的处理能力
+dtm itself behaves similarly to an ordinary stateless application, where the data is stored in the database. 
+Therefore, dtm can be deployed with multiple replicas just like an ordinary application. 
+The recommended number of replicas is 2 or 3, which is sufficient for high availability. 
+As the load rises, the number of replicas of dtm can be increased to improve the processing capacity of dtm.
 
-## K8S部署
+## K8S Deployment
 
-当前dtm支持http协议，可以把前面docker部署的方式，增加K8S的deployment配置，完成K8S部署，下面给出一个deployment.yml的一个参考
+Currently, since dtm supports http protocol, you can achieve the K8S deployment by adding the deployment configuration of K8S to the previous docker deployment.
+A reference of deployment.yml is given below:
 
 ``` yml
 apiVersion: apps/v1
