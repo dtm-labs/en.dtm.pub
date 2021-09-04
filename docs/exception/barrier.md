@@ -1,62 +1,80 @@
-# 子事务屏障
+# Subtransaction barriers
 
-## 功能
+## Functionality
 
-我们在dtm中，首创了子事务屏障技术，使用该技术，能够达到这个效果，看示意图：
+We have pioneered the subtransaction barrier technique in dtm.
+The outcome of using subtransaction barrier is shown below:
 
 ![barrier](../imgs/barrier.jpg)
 
-所有这些请求，到了子事务屏障后：不正常的请求，会被过滤；正常请求，通过屏障。开发者使用子事务屏障之后，前面所说的各种异常全部被妥善处理，业务开发人员只需要关注实际的业务逻辑，负担大大降低。
-子事务屏障提供了方法ThroughBarrierCall，方法的原型为：
+For all requests that arrive at the subtransaction barrier: abnormal requests are filtered; validated requests pass through the barrier.
+After the developer uses the subtransaction barrier, all kinds of exceptions described earlier in the tutorial are handled properly.
+The business developer only needs to focus on the actual business logic, and the burden is greatly reduced.
+The subtransaction barrier technique provides the method ThroughBarrierCall, signature of which is shown below:
 
 
 ``` go
 func (bb *BranchBarrier) Call(db *sql.DB, busiCall BusiFunc) error
 ```
 
-业务开发人员，在busiCall里面编写自己的相关逻辑，调用BranchBarrier.Call。BranchBarrier.Call保证，在空回滚、悬挂等场景下，busiCall不会被调用；在业务被重复调用时，有幂等控制，保证只被提交一次。
+Business developers write their specific business logic inside busiCall, and call BranchBarrier.Call with it. 
+BranchBarrier.Call guarantees that busiCall will not be called in scenarios such as empty rollback, suspension, etc, and that, when the business service is called repeatedly, proper idempotent control ensures that it is committed only once.
 
-子事务屏障会管理TCC、SAGA、事务消息等，也可以扩展到其他领域
+Subtransaction barrier recognizes and manages TCC, SAGA, transaction messages, etc., and can also be extended to other areas.
 
-## 原理
+## Mechanism
 
-子事务屏障技术的原理是，在本地数据库，建立分支事务状态表sub_trans_barrier，唯一键为全局事务id-子事务id-子事务分支名称（try|confirm|cancel）
+The mechanism of subtransaction barrier technology is to create a branch transaction status table sub_trans_barrier in the local database, with the unique key of global transaction id - subtransaction id - subtransaction branch name (try|confirm|cancel).
 
-- 开启事务
-- 如果是Try分支，则那么insert ignore插入gid-branchid-try，如果成功插入，则调用屏障内逻辑
-- 如果是Confirm分支，那么insert ignore插入gid-branchid-confirm，如果成功插入，则调用屏障内逻辑
-- 如果是Cancel分支，那么insert ignore插入gid-branchid-try，再插入gid-branchid-cancel，如果try未插入并且cancel插入成功，则调用屏障内逻辑
-- 屏障内逻辑返回成功，提交事务，返回成功
-- 屏障内逻辑返回错误，回滚事务，返回错误
+- Open transaction
 
-在此机制下，解决了网络异常相关的问题
+- If it is Try branch, insert ignore gid-branchid-try.
+  If insert is successful, call the logic inside the barrier.
 
-- 空补偿控制--如果Try没有执行，直接执行了Cancel，那么Cancel插入gid-branchid-try会成功，不走屏障内的逻辑，保证了空补偿控制
-- 幂等控制--任何一个分支都无法重复插入唯一键，保证了不会重复执行
-- 防悬挂控制--Try在Cancel之后执行，那么插入的gid-branchid-try不成功，就不执行，保证了防悬挂控制
+- If it is Confirm branch, insert ignore gid-branchid-confirm
+  If insert is succeedful, invoke the in-barrier logic.
 
-对于SAGA、事务消息，也是类似的机制。
+- If it is Cancel branch, insert ignore gid-branchid-try and then gid-branchid-cancel.
+  If try is not inserted but cancel is inserted successfully, call the in-barrier logic.
 
-## 结合常见的orm库
+- The logic inside the barrier completes successfully, commits the transaction, and returns success.
 
-barrier提供了sql标准接口，但大家的应用通常都会引入更高级的orm库，而不是裸用sql接口，因此需要进行转化，下面给出常见几个orm库的转化示例
+- If the logic inside the barrier returns an error, the transaction is rolled back and an error is returned.
+
+With this mechanism, network exception-related problems are solved.
+
+- Empty compensation control.
+  If Try is not executed and Cancel is executed directly, the Cancel inserting gid-branchid-try will succeed and the logic inside the barrier is not taken, ensuring empty compensation control.
+
+- Idempotent control.
+  Any branch can not repeat the insertion of unique keys, to ensure that no repeated execution.
+
+- Anti-hanging control.
+  When Try is executed after Cancel, the inserted gid-branchid-try will not be executed if it is unsuccessful, ensuring anti-hanging control.
+
+For SAGA and transaction messages, it is a similar mechanism.
+
+## Combining common orm libraries
+
+barrier provides sql standard interface, but everyone's application usually introduces more advanced orm, instead of using sql interface directly, so it needs to be transformed.
+The following gives a few common orm library adaptation examples:
 
 ### gorm
 
-使用示例代码如下：
+Example code used is as follows.
 
 ``` go
 	sdb, err := gdb.DB() // gdb is a *gorm.DB
-	if err != nil {
+	if err ! = nil {
 		return nil, err
 	}
 	barrier := MustBarrierFromGin(c)
 	return dtmcli.ResultSuccess, barrier.Call(sdb, func(sdb *sql.Tx) error {
 		tx := SQLTx2Gorm(sdb, gdb)
-		return tx.Exec("update dtm_busi.user_account set balance = balance + ? where user_id = ?", req.Amount, 1).Error
+		return tx.Exec("update dtm_busi.user_account set balance = balance + ? where user_id = ?" , req.Amount, 1).Error
 	})
 
-// SQLTx2Gorm 从SqlTx构建一个gorm.DB
+// SQLTx2Gorm build a gorm.DB from SqlTx
 func SQLTx2Gorm(stx *sql.Tx, db *gorm.DB) *gorm.DB {
 	tx := db.Session(&gorm.Session{Context: db.Statement.Context})
 	tx.Statement.ConnPool = stx
@@ -65,14 +83,18 @@ func SQLTx2Gorm(stx *sql.Tx, db *gorm.DB) *gorm.DB {
 
 ```
 
-## 小结
+## Summary
 
-子事务屏障技术，为DTM首创，它的意义在于
+The subtransaction barrier technique is developed by DTM. 
+The significance includes
 
-- 算法简单易实现
-- 系统统一的解决方案，易维护
-- 提供了简单易用的接口，易使用
+- Simple algorithm and easy to implement
+- A unified system solution, easy to maintain
+- Easy-to-use interface
 
-在这子事务屏障技术的帮助下，开发人员彻底的从网络异常的处理中解放出来。原先需要投入一位架构师处理这类异常，借助dtm的子事务屏障，只需要一个高级开发工程师就可以完成
+With the help of this subtransaction barrier technology, developers are completely freed from the handling of network exceptions. 
+With DTM's subtransaction barrier, only one senior development engineer is required to handle such exceptions.
 
-该技术目前需要搭配DTM事务管理器，目前SDK已经提供给go语言的开发者。其他语言的sdk正在规划中。对于其他的分布式事务框架，只要提供了合适的分布式事务信息，也能够按照上述原理，快速实现该技术。
+This technology currently requires a DTM transaction manager, and the SDK is currently available to developers of the go language.
+Other languages' sdk is under planning. 
+For other distributed transaction frameworks, as long as the appropriate distributed transaction information is provided, the technology can also be implemented quickly according to the above principles.
