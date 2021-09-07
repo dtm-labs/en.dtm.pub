@@ -1,7 +1,7 @@
 module.exports = {
-  title: 'DTM教程',
-  description: 'GO语言分布式事务管理服务',
-  lang: 'zh-CN',
+  title: 'DTM tutorial',
+  description: 'Distributed transanction management in Go',
+  lang: 'en-US',
   head: [
     ['link', { rel: 'icon', type: 'image/svg', href: '/dtm.svg' }],
     ['script', { defer: true, type: 'text/javascript', src: 'https://s9.cnzz.com/z_stat.php?id=1280154965&web_id=1280154965' }]
@@ -18,28 +18,28 @@ module.exports = {
     // },
 
     nav: [
-      { text: '指引', link: '/guide/start' },
-      { text: '博客', link: '/blogs/classic-dtrans' },
+      { text: 'Guide', link: '/guide/start' },
+      { text: 'Blog', link: '/blogs/classic-dtrans' },
       // { text: '示例', link: '/examples/' },
       { text: 'Github', link: 'https://github.com/yedf/dtm' },
-      { text: '知乎', link: 'https://www.zhihu.com/people/ye-dongfu' }
+      { text: 'zhihu', link: 'https://www.zhihu.com/people/ye-dongfu' }
     ],
     sidebar: {
       '/blogs/': [
         {
-          text: '分布式事务最经典的七种解决方案',
+          text: 'The seven classic solutions for distributed transanction management',
           link: '/blogs/classic-dtrans',
         },
         {
-          text: '如何选择最适合你的分布式事务方案',
+          text: 'Choose the right distributed transanction management solution',
           link: '/blogs/choose-dtrans',
         },
         {
-          text: '用Go轻松完成一个SAGA分布式事务',
+          text: 'SAGA distributed transanction model in Go',
           link: '/blogs/go-saga',
         },
         {
-          text: '用Go轻松完成一个TCC分布式事务',
+          text: 'TCC distributed transanction model in Go',
           link: '/blogs/go-tcc',
         },
       ],
@@ -47,49 +47,49 @@ module.exports = {
       // catch-all fallback
       '/': [
         {
-          text: '基础',
+          text: 'Fundations',
           children: [
             {
-              text: '分布式事务理论',
+              text: 'Distributed transanction management theory',
               link: '/guide/theory'
             },
             {
-              text: '安装',
+              text: 'Installation',
               link: '/guide/install'
             },
             {
-              text: 'Why',
+              text: 'Why DTM',
               link: '/guide/why'
             },
             {
-              text: '开始',
+              text: 'Start here',
               link: '/guide/start'
             }
           ]
         },
         {
-          text: '概况',
+          text: 'Overview',
           children: [
             {
-              text: '架构',
+              text: 'Architecture',
               link: '/summary/arch'
             },
             {
-              text: '接口协议',
+              text: 'Protocols',
               link: '/summary/protocol'
             },
             {
-              text: '数据库接口',
+              text: 'Databases',
               link: '/summary/db'
             },
             {
-              text: '代码概况',
+              text: 'Source code',
               link: '/summary/code'
             },
           ]
         },
         {
-          text: '实践',
+          text: 'Practice',
           children: [
             {
               text: 'SAGA',
@@ -104,70 +104,70 @@ module.exports = {
               link: '/practice/xa'
             },
             {
-              text: '事务消息',
+              text: 'Transanctional Messaging',
               link: '/practice/msg'
             },
             {
-              text: '其他',
+              text: 'Others',
               link: '/practice/other'
             },
             {
-              text: '等待事务结果',
+              text: 'Wait for results',
               link: '/practice/wait'
             },
             {
-              text: '选择合适的模式',
+              text: 'Choose the right transanction model',
               link: '/practice/choice'
             }
           ]
         },
         {
-          text: '异常处理',
+          text: 'Exception handling',
           children: [
             {
-              text: '异常',
+              text: 'Exceptions',
               link: '/exception/exception'
             },
             {
-              text: '子事务屏障',
+              text: 'Subtransanction barrier',
               link: '/exception/barrier'
             }
           ]
         },
         {
-          text: '部署运维',
+          text: 'Deployment and maintenance',
           children: [
             {
-              text: '基础',
+              text: 'Basics',
               link: '/deploy/base'
             },
             {
-              text: 'Docker部署',
+              text: 'Docker deployment',
               link: '/deploy/docker'
             },
             {
-              text: '线上部署',
+              text: 'Online deployment',
               link: '/deploy/online'
             },
             {
-              text: '直接部署',
+              text: 'Direct deployment',
               link: '/deploy/direct'
             },
             {
-              text: '运维',
+              text: 'Maintenance',
               link: '/deploy/maintain'
             }
           ]
         },
         {
-          text: '其他',
+          text: 'Miscellaneous',
           children: [
             {
-              text: '其他框架',
+              text: 'Alternatives',
               link: '/other/opensource'
             },
             {
-              text: '谁在用',
+              text: 'Who uses DTM',
               link: '/other/using'
             }
           ]
