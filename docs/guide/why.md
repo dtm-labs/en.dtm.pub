@@ -31,6 +31,6 @@ After carefully evaluating the second option, we found that our own distributed 
 
 In summary, in the three important aspects of development, namely simplicity and easiness to use, multi-language support, and reduction of business burden, our dtm solution is very good and stands out compared to other solutions we researched.
 This is the reason why we decided to develop our own distributed transaction solution.
-Comparison between dtm can seata can be seen here [DTM vs SEATA](./other/opensource).
+Comparison between dtm can seata can be seen here [DTM vs SEATA](../other/opensource).
 
 Since our experience in practice shows that dtm is really excellent, can greatly reduce the threshold of using distributed transactions, and can solve many problems that cannot be solved in the market, we open source it to feed the open source community.
