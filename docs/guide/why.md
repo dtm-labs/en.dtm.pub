@@ -5,12 +5,12 @@
 The dtm project originated from a problem in a real project.
 In our company, services involving order payments put all business-related logic into one big local transaction, which leads to significant coupling and a huge increase in complexity.
 
-In the middle of code refactor into microservice-based architecture using Go, we needed to split the original transaction into several distributed transactions. 
+In the middle of code refactor into microservice-based architecture using Go, we needed to split the original transaction into several distributed transactions.
 After researching available open source distributed transaction solutions, we found that the only mature solution is Java-based.
-Neither Go nor other languages have mature distributed transaction solutions. 
+Neither Go nor other languages have mature distributed transaction solutions.
 This left us two choices:
 
-- The first choice is to switch completely to Java, and then use seata, the most popular solution in Java applications. 
+- The first choice is to switch completely to Java, and then use seata, the most popular solution in Java applications.
   This solution is too costly since it requires a lot of the original business to be rewritten in Java.
 
 - The second choice is to develop our own distributed transaction manager.
@@ -31,6 +31,6 @@ After carefully evaluating the second option, we found that our own distributed 
 
 In summary, in the three important aspects of development, namely simplicity and easiness to use, multi-language support, and reduction of business burden, our dtm solution is very good and stands out compared to other solutions we researched.
 This is the reason why we decided to develop our own distributed transaction solution.
-Comparison between dtm can seata can be seen here [DTM vs SEATA](. /other/opensource).
+Comparison between dtm can seata can be seen here [DTM vs SEATA](./other/opensource).
 
 Since our experience in practice shows that dtm is really excellent, can greatly reduce the threshold of using distributed transactions, and can solve many problems that cannot be solved in the market, we open source it to feed the open source community.
