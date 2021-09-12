@@ -3,17 +3,17 @@
 ## What is DTM
 
 DTM is the first distributed transaction management framework in golang. 
-Unlike other frameworks, DTM provides extremely easy access to HTTP and GRPC, supports multiple language bindings, and handles tricky problems of unordered subtransactions at the framework level.
+Unlike other frameworks, DTM provides extremely easy access to HTTP and gRPC, supports multiple language bindings, and handles tricky problems of unordered sub-transactions at the framework level.
 
 Learn more behind the design of DTM in [why choose DTM](./why).
 
 ## Features
 
 * Extremely easy to adopt
-  - Support HTTP and GRPC, provide easy-to-use programing interfaces, lower substantially the barrier of getting started with distributed transactions, newcomers can adopt quickly
+  - Support HTTP and gRPC, provide easy-to-use programing interfaces, lower substantially the barrier of getting started with distributed transactions, newcomers can adopt quickly
 
 * Easy to use
-  - Relieving developers from worrying about suspension, null compensation, transaction-idempotence and other tricky problems, the framework layer handles them all
+  - Relieving developers from worrying about suspension, null compensation, idempotent transaction, and other tricky problems, the framework layer handles them all
 
 * Language-agnostic
   - Suitable for companies with multiple-language stacks. 
@@ -45,7 +45,7 @@ Invited speaker at the China Database Conference. [Distributed Transaction Pract
     vertical-align: middle;
     border-radius: 2em;
     font-weight: 600;
-" href="../other/opensource">Comparison to seata</a>
+" href="../other/opensource">Comparison to Seata</a>
 
 ## start
 
@@ -78,7 +78,7 @@ In this example, a saga distributed transaction is created and then committed to
 ```
 
 This distributed transaction demo simulates a scenario in a distributed transaction for cross-bank transfers.
-The master transaction is comprised of two subtransactions, TransOut (transfer money out from source account) and TransIn (transfer money into destination account), both consisting of forward operations and reverse compensation, defined as follows:
+The master transaction is comprised of two sub-transactions, TransOut (transfer money out from source account) and TransIn (transfer money into destination account), both consisting of forward operations and reverse compensation, defined as follows:
 
 ``` go
 func qsAdjustBalance(uid int, amount int) (interface{}, error) {
@@ -111,8 +111,8 @@ The entire transaction completes successfully eventually with the following timi
 
 ![saga_normal](../imgs/saga_normal.jpg)
 
-In a real business, it is possible that a subtransaction may fail.
-For example, the destination subaccount is freezed, causing the transfer to fail. 
+In a real business, it is possible that a sub-transaction may fail.
+For example, the destination sub-account is freezed, causing the transfer to fail. 
 Let's modify the business code to purposely fail the forward operation of TransIn and watch what happens.
 
 ``` go

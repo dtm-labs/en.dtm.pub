@@ -9,7 +9,7 @@
 - TCC.
   Using this model, users need to provide Try/Confirm/Cancel.
   There is no data lock, allowing high concurrency.
-  Furthermore, nested subtransactions is supported.
+  Furthermore, nested sub-transactions is supported.
 
 - SAGA.
   Using this model, users need to provide action/compensation.
@@ -29,15 +29,15 @@
 
 - Suppose you have a registration service that gives membership of one month and also a coupon to the newly-registered user.
   For this situation, it is suitable to use the Transaction Message model.
-  In the user registeration transaction, define the message that contains the membership and coupon collection.
+  In the user registration transaction, define the message that contains the membership and coupon collection.
   Prepare and, after the transaction is committed, call Submit.
 
 - Suppose you have a distributed transaction that needs to call a bank transfer interface, and suppose the interface will take a long time.
   For this situation, it is suitable to use the SAGA model.
   Because the whole process takes a long time, it is suitable to store the states of all the steps of the whole transaction in the server side, which means application crashes do not lead to rollback.
 
-- Suppose you have an order-related business that invokes different subtransactions based on item information, where nesting may occur. 
-  For this situation, it is suitable to use the TCC model, because the application has the most flexible control over TCC and nested subtransaction is supported.
+- Suppose you have an order-related business that invokes different sub-transactions based on item information, where nesting may occur. 
+  For this situation, it is suitable to use the TCC model, because the application has the most flexible control over TCC and nested sub-transaction is supported.
 
 - If your business does not require high concurrency, it is fine to use the XA model.
 

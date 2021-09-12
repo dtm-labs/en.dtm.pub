@@ -54,12 +54,12 @@ As a result, the receiving side needs to actively call the initiating notifier's
 
 A solution using the Best-effort Notification model should:
 
-- Provide an interface to allow the receiving side to activly query the results of the business processing 
+- Provide an interface to allow the receiving side to actively query the results of the business processing 
 
 - Setup ACK mechanism of messaging, which means the notification interval is gradually increased with the interval of 1min, 5min, 10min, 30min, 1h, 2h, 5h, 10h, until it reaches the upper limit of the time window of notification requirements. 
   No further notifications are made after that.
 
-Best-effort Notification is applicable to business notification senarios.
+Best-effort Notification is applicable to business notification scenarios.
 For example, the results of WeChat transactions are notified to each merchant through Best-effort Notification model, with both callback notifications and transaction query interfaces.
 
 Best-effort Notification can be considered more of a business design.
@@ -67,7 +67,7 @@ In the infrastructure layer, one can use Transaction Messaging directly.
 
 ## AT
 
-This is a transaction pattern implemented in the Ali open source project [seata](https://github.com/seata/seata), also known as FMT in Ant Financial Services.
+This is a transaction pattern implemented in the Ali open source project [Seata](https://github.com/seata/seata), also known as FMT in Ant Financial Services.
 
 - The advantage of this transaction model is similar to the XA model.
   The business code does not need to provide all kinds of compensation operations, and rollback is done automatically by the framework.
@@ -77,13 +77,13 @@ This is a transaction pattern implemented in the Ali open source project [seata]
   The locking is shorter than XA though, thus the performance is a little higher.
   In addition, when using AT mode, dirty rollback may occur.
 
-Please refer to [seata-AT](http://seata.io/zh-cn/docs/dev/mode/xa-mode.html) if you are interested to know more.
+Please refer to [Seata-AT](http://seata.io/zh-cn/docs/dev/mode/xa-mode.html) if you are interested to know more.
 
 DTM does not implement the AT transaction model based on the following considerations:
 
 - Dirty rollbacks need to be handled manually
 
-- To avoid dirty rollbacks, all business personnel accessing the subtransaction tables need to access them through unified annotations, resulting to a high learning curve
+- To avoid dirty rollbacks, all business personnel accessing the sub-transaction tables need to access them through unified annotations, resulting to a high learning curve
 
 - The client side of implementing AT will be very heavy, which is contrary to the original intention of DTM to support cross-language
 

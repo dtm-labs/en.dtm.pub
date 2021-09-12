@@ -57,10 +57,10 @@ Let's complete this distributed transaction using transactional message in DTM:
 ```
 
 In the above code, a transactional message is created first.
-Two subtransactions, namely TransOut and TransIn, are added to the transactional message.
+Two sub-transactions, namely TransOut and TransIn, are added to the transactional message.
 The local transaction internally calls the Prepare interface.
 After the local transaction is committed, it calls the Submit interface. 
-After DTM receives the submit message, it calls the relevant subtransaction to ensure final completion.
+After DTM receives the submit message, it calls the relevant sub-transaction to ensure final completion.
 
 ## Timeout check
 

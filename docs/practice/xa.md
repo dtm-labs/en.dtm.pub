@@ -136,11 +136,11 @@ func (s *busiServer) TransOutXa(ctx context.Context, in *dtmgrpc.BusiRequest) (*
 
 ```
 
-The above code first registers a global XA transaction, then adds two subtransactions TransOut, TransIn. 
-After all the subtransactions are executed successfully, the global XA transaction is committed to DTM. 
-DTM receives the committed xa global transaction, and calls the xa commit of all the subtransactions to complete the whole xa transaction.
+The above code first registers a global XA transaction, then adds two sub-transactions TransOut, TransIn. 
+After all the sub-transactions are executed successfully, the global XA transaction is committed to DTM. 
+DTM receives the committed xa global transaction, and calls the xa commit of all the sub-transactions to complete the whole xa transaction.
 
-### Rollback upon faliure
+### Rollback upon failure
 
 If a prepare phase operation fails, DTM will call xa rollback of each child transaction to roll back, and the transaction is successfully rolled back at last.
 

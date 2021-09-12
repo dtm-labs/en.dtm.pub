@@ -2,7 +2,7 @@
 
 ## Inter-role communication protocols
 
-Currently, dtm only supports http and grpc protocols. 
+Currently, dtm only supports http and gRPC protocols. 
 Since distributed transactions involve multiple roles collaborating, some participants may appear temporarily unavailable and need to retry; some participants are explicitly informed of the failure and need to be rolled back.
 
 ### HTTP
@@ -12,7 +12,7 @@ Interface is similar to the WeChat/Alipay order callback interface: if the inter
 
 In the above architecture diagram, there are mainly the following types of interfaces:
 
-AP calls the interface of TM, mainly for global transaction registration, commit, subtransaction registration, etc:
+AP calls the interface of TM, mainly for global transaction registration, commit, sub-transaction registration, etc:
   - Success: { dtm_result: "SUCCESS" }
   - Fail: { dtm_result: "FAILURE" }, indicating that the status of the request is not correct, e.g. a global transaction that has gone FAIL is not allowed to register branches again
   - Others indicate that the status is uncertain and can be retried
@@ -23,7 +23,7 @@ TM calls the RM interface, mainly for the two-stage commit, rollback, and the br
   - The other result indicates further retrial, and TM keeps retrying until it returns one of the above two results
 
 AP calls RM's interface, which is business related, and mainly called in two modes, TCC and XA. 
-Considering that many microservices are governed by a failure retry mechanism, it is recommended that the interface be designed as follows:
+Considering that many micro-services are governed by a failure retry mechanism, it is recommended that the interface be designed as follows:
   - success: { dtm_result: "SUCCESS" }, indicating that this interface call is successful and the next operation is performed normally. 
     The returned result can additionally contain other business data.
   - Failure: { dtm_result: "FAILURE" }, meaning that the interface call failed and the global transaction needs to be rolled back. 
@@ -33,7 +33,7 @@ Considering that many microservices are governed by a failure retry mechanism, i
     Mainly because the next operation of the TCC or XA transaction is not saved in the database, but in the AP, it needs to respond to the user in a timely manner, and can not wait a long time for failure recovery.
 
 ::: tip interface data notes
-dtm checks if resp.String() contains SUCCESS/FAILURE to determine success and failure, so please avoid including these two words in the business data returned by the subtransaction interface.
+dtm checks if resp.String() contains SUCCESS/FAILURE to determine success and failure, so please avoid including these two words in the business data returned by the sub-transaction interface.
 :::
 
 ### GRPC
@@ -43,7 +43,7 @@ Since GRPC is a strongly typed protocol and has defined individual error status 
 - OK: means the call was successful, corresponding to { dtm_result: "SUCCESS" } in the above http protocol, you can proceed to the next step
 - Other errors?: Status unknown, can retry
 
-AP calls the interface of TM, mainly for global transaction registration, commit, subtransaction registration, etc:
+AP calls the interface of TM, mainly for global transaction registration, commit, sub-transaction registration, etc:
 - No return value.
   Check error to see if it is nil, Aborted, or other
 
@@ -90,6 +90,6 @@ Retry upon failure is a very important part of microservice governance.
 The http and grpc protocols described above are well compatible with the mainstream strategies for retry upon failure.
 
 When the global transaction faces temporary failure caused by some components, the global transaction will be temporarily interrupted.
-Subsequently, dtm will regularly poll the global transaction that is uncompleted due to time out within one hour to retry. Intervals between sucessive retries are doubled to avoid avalanches.
+Subsequently, dtm will regularly poll the global transaction that is uncompleted due to time out within one hour to retry. Intervals between successive retries are doubled to avoid avalanches.
 
 If the application does not retry the uncompleted global transaction within one hour, probably due to various bugs or failures, developers can manually modify the next_cron_time in dtm.trans_global to trigger a retry after they fix the bugs or failures.

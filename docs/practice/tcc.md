@@ -16,7 +16,7 @@ TCC is divided into 3 phases
 - Cancel phase: The requestor can execute a cancellation operation on the provider if it decides not to move forward, e.g., when the provider does not complete the Try phase successfully.
   Business resources reserved in the Try phase should be released in the Cancel phase.
 
-Suppose we want to perform an inter-bank transfer, using TransOut and TransIn implemented in separate microservices.
+Suppose we want to perform an inter-bank transfer, using TransOut and TransIn implemented in separate micro-services.
 A typical timing diagram for a successfully completed transaction using the TCC transaction model is as follows:
 
 ![tcc_normal](../imgs/tcc_normal.jpg)
@@ -62,7 +62,7 @@ func TccGlobalTransaction(dtm string, gid string, tccFunc TccGlobalFunc) error
 ```
 
 When the global transaction starts, the content of function tccFunc will be called. 
-In the example, inside function tccFunc, we call CallBranch twice to define two subtransactions TransOut and TransIn, each built using the TCC transaction model.
+In the example, inside function tccFunc, we call CallBranch twice to define two sub-transactions TransOut and TransIn, each built using the TCC transaction model.
 
 ``` go
 // CallBranch call a tcc branch
@@ -91,7 +91,7 @@ The timing diagram for failure is as follows:
 
 ## Nesting
 
-DTM supports nested TCC subtransactions as shown in the following code (taken from [examples/http_tcc](https://github.com/yedf/dtm/blob/main/examples/http_tcc.go)).
+DTM supports nested TCC sub-transactions as shown in the following code (taken from [examples/http_tcc](https://github.com/yedf/dtm/blob/main/examples/http_tcc.go)).
 
 ``` go
 err := dtmcli.TccGlobalTransaction(DtmServer, gid, func(tcc *dtmcli.Tcc) (*resty.Response, error) {
@@ -103,7 +103,7 @@ err := dtmcli.TccGlobalTransaction(DtmServer, gid, func(tcc *dtmcli.Tcc) (*resty
 })
 ```
 
-Here the TransInTccParent subtransaction will call the TransIn subtransaction, as shown in the following code:
+Here the TransInTccParent sub-transaction will call the TransIn sub-transaction, as shown in the following code:
 
 ``` go
 app.POST(BusiAPI+"/TransInTccParent", common.WrapHandler(func(c *gin.Context) (interface{}, error) {
@@ -114,7 +114,7 @@ app.POST(BusiAPI+"/TransInTccParent", common.WrapHandler(func(c *gin.Context) (i
 }))
 ```
 
-Within the nested TCC subworkflow, the tcc object can be constructed from the incoming request, and then used normally for business operations.
+Within the nested TCC sub-workflow, the tcc object can be constructed from the incoming request, and then used normally for business operations.
 
 More documentation of nested TCC, including the timing diagrams, will be added in future.
 

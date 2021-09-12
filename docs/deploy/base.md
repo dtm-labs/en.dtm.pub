@@ -2,7 +2,7 @@
 
 ## Overview
 DTM can be divided into three roles, application program (AP), resource manager (RM), and transaction manager (TM).
-AP and RM are business microservices, with DTM SDK integrated.
+AP and RM are business micro-services, with DTM SDK integrated.
 Their deployment is done with the business without separate deployment.
 On the other hand, DTM needs separate deployment.
 
@@ -22,8 +22,8 @@ Online deployment consists of the following steps:
 ### RM table
 
 RM relies on local resource management.
-Therefore, subtransaction barrier technology provided by DTM requires the creation of subtransaction barrier-related tables in the local database. 
-See [subtransaction barrier table SQL](https://github.com/yedf/dtm/tree/main/dtmcli/barrier.mysql.sql)
+Therefore, sub-transaction barrier technology provided by DTM requires the creation of sub-transaction barrier-related tables in the local database. 
+See [sub-transaction barrier table SQL](https://github.com/yedf/dtm/tree/main/dtmcli/barrier.mysql.sql)
 
 ### DTM table
 

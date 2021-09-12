@@ -93,7 +93,7 @@ Suppose A needs to transfer money to B across banks.
 The scenario involves data from two banks, thus the ACID of the transfer cannot be guaranteed by a local transaction in one database, but only be solved by a distributed transaction.
 
 A distributed transaction means that the transaction initiator, the resource and resource manager and the transaction coordinator are located on different nodes of the distributed system.
-In the above inter-bank transfer senarior, the A-$100 operation and the B+$100 operation are not located on the same node.
+In the above inter-bank transfer scenarios, the A-$100 operation and the B+$100 operation are not located on the same node.
 In essence, distributed transactions aims to ensure the correct execution of data operations in a distributed scenario.
 
 On one hand, distributed transactions follow the BASE theory in a distributed environment in order to meet the needs of availability, performance and degraded services, while reducing the requirements of consistency and isolation:

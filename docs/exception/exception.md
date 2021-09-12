@@ -11,7 +11,7 @@ The Cancel method needs to recognize that this is an empty rollback and then ret
 
 **Idempotent:**
 
-Since any one request can have network exceptions and duplicate requests happen, all distributed transaction branches need to guarantee idempotency.
+Since any one request can have network exceptions and duplicate requests happen, all distributed transaction branches need to guarantee to be idempotent.
 
 **Suspension:**
 

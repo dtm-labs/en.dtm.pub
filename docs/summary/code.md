@@ -9,11 +9,11 @@ The dtm project has the following main directories
 
 - common: public functions and class libraries, including logging, json, database, network, etc.
 
-- dtmcli: dtm's http client, including tcc, saga, xa, msg transaction modes, and subtransaction barrier
+- dtmcli: dtm's http client, including tcc, saga, xa, msg transaction modes, and sub-transaction barrier
 
-- dtmgrpc: dtm's grpc client, including the tcc, saga, xa, msg transaction modes, and subtransaction barrier 
+- dtmgrpc: dtm's gRPC client, including the tcc, saga, xa, msg transaction modes, and sub-transaction barrier 
 
-- dtmsvr: dtm's server side, including http, grpc server APIs for various transaction modes implementation
+- dtmsvr: dtm's server side, including http, gRPC server APIs for various transaction modes implementation
 
 - examples: contains various examples
 
@@ -21,7 +21,7 @@ The dtm project has the following main directories
 
 ## code description
 
-The idomatic error handling method in Go is "error is a value", not exception.
+The idiomatic error handling method in Go is "error is a value", not exception.
 Therefore, the interfaces provided to users in dtmcli are all in line with this standard.
 
 The example given, however, uses the function e2p, which is a custom function that turns error into a panic.
@@ -32,9 +32,9 @@ Although it does not conform to the go specification, it reduces the amount of e
 The example used in dtm is mainly a distributed transaction for a transfer. 
 Suppose a scenario where there is a transfer from A to B, but A and B belong to different banks and are stored in different databases.
 This scenario is a typical distributed transaction scenario.
-We define this distributed transaction as two subtransactions, one for the transfer out TransOut and one for the transfer in TransIn.
+We define this distributed transaction as two sub-transactions, one for the transfer out TransOut and one for the transfer in TransIn.
 
-Since we will often call these two subtransactions repeatedly in the later examples, we pull out the processing of these two subtransactions separately
+Since we will often call these two sub-transactions repeatedly in the later examples, we pull out the processing of these two sub-transactions separately
 
 ### http
 
@@ -88,7 +88,7 @@ func handleGrpcBusiness(in *dtmgrpc.BusiRequest, result1 string, result2 string,
 	} else if res == "FAILURE" {
 		return status.New(codes.Aborted, "user want to rollback").Err()
 	}
-	return status.New(codes.Internal, fmt.Sprintf("unknow result %s", res)).Err()
+	return status.New(codes.Internal, fmt.Sprintf("unknown result %s", res)).Err()
 }
 
 func (s *busiServer) CanSubmit(ctx context.Context, in *dtmgrpc.BusiRequest) (*emptypb.Empty, error) {
@@ -156,7 +156,7 @@ Thanks to [geffzhang](https://github.com/geffzhang) for help with the C sdk and 
 
 ### python
 
-Client sdk (currently supports TCC, SAGA, subtransaction barriers): [https://github.com/yedf/dtmcli-py](https://github.com/yedf/dtmcli-py)
+Client sdk (currently supports TCC, SAGA, sub-transaction barriers): [https://github.com/yedf/dtmcli-py](https://github.com/yedf/dtmcli-py)
 
 Example: [https://github.com/yedf/dtmcli-py-sample](https://github.com/yedf/dtmcli-py-sample)
 

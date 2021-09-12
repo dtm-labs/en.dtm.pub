@@ -2,7 +2,7 @@
 
 ## Overview
 
-The subtransaction barrier in dtm needs to interact with the database.
+The sub-transaction barrier in dtm needs to interact with the database.
 The xa transaction mode also needs to interact with the database. 
 The interaction interface currently defined by dtm is compatible with the standard sql library.
 Therefore, when developing using dtm, you can directly pass sql.DB/sql.Tx.

@@ -1,16 +1,16 @@
-# Subtransaction barriers
+# Sub-transaction barriers
 
 ## Functionality
 
-We have pioneered the subtransaction barrier technique in dtm.
-The outcome of using subtransaction barrier is shown below:
+We have pioneered the sub-transaction barrier technique in dtm.
+The outcome of using sub-transaction barrier is shown below:
 
 ![barrier](../imgs/barrier.jpg)
 
-For all requests that arrive at the subtransaction barrier: abnormal requests are filtered; validated requests pass through the barrier.
-After the developer uses the subtransaction barrier, all kinds of exceptions described earlier in the tutorial are handled properly.
+For all requests that arrive at the sub-transaction barrier: abnormal requests are filtered; validated requests pass through the barrier.
+After the developer uses the sub-transaction barrier, all kinds of exceptions described earlier in the tutorial are handled properly.
 The business developer only needs to focus on the actual business logic, and the burden is greatly reduced.
-The subtransaction barrier technique provides the method ThroughBarrierCall, signature of which is shown below:
+The sub-transaction barrier technique provides the method ThroughBarrierCall, signature of which is shown below:
 
 
 ``` go
@@ -20,11 +20,11 @@ func (bb *BranchBarrier) Call(db *sql.DB, busiCall BusiFunc) error
 Business developers write their specific business logic inside busiCall, and call BranchBarrier.Call with it. 
 BranchBarrier.Call guarantees that busiCall will not be called in scenarios such as empty rollback, suspension, etc, and that, when the business service is called repeatedly, proper idempotent control ensures that it is committed only once.
 
-Subtransaction barrier recognizes and manages TCC, SAGA, transaction messages, etc., and can also be extended to other areas.
+sub-transaction barrier recognizes and manages TCC, SAGA, transaction messages, etc., and can also be extended to other areas.
 
 ## Mechanism
 
-The mechanism of subtransaction barrier technology is to create a branch transaction status table sub_trans_barrier in the local database, with the unique key of global transaction id - subtransaction id - subtransaction branch name (try|confirm|cancel).
+The mechanism of sub-transaction barrier technology is to create a branch transaction status table sub_trans_barrier in the local database, with the unique key of global transaction id - sub-transaction id - sub-transaction branch name (try|confirm|cancel).
 
 - Open transaction
 
@@ -32,7 +32,7 @@ The mechanism of subtransaction barrier technology is to create a branch transac
   If insert is successful, call the logic inside the barrier.
 
 - If it is Confirm branch, insert ignore gid-branchid-confirm
-  If insert is succeedful, invoke the in-barrier logic.
+  If insert is successful, invoke the in-barrier logic.
 
 - If it is Cancel branch, insert ignore gid-branchid-try and then gid-branchid-cancel.
   If try is not inserted but cancel is inserted successfully, call the in-barrier logic.
@@ -85,15 +85,15 @@ func SQLTx2Gorm(stx *sql.Tx, db *gorm.DB) *gorm.DB {
 
 ## Summary
 
-The subtransaction barrier technique is developed by DTM. 
+The sub-transaction barrier technique is developed by DTM. 
 The significance includes
 
 - Simple algorithm and easy to implement
 - A unified system solution, easy to maintain
 - Easy-to-use interface
 
-With the help of this subtransaction barrier technology, developers are completely freed from the handling of network exceptions. 
-With DTM's subtransaction barrier, only one senior development engineer is required to handle such exceptions.
+With the help of this sub-transaction barrier technology, developers are completely freed from the handling of network exceptions. 
+With DTM's sub-transaction barrier, only one senior development engineer is required to handle such exceptions.
 
 This technology currently requires a DTM transaction manager, and the SDK is currently available to developers of the go language.
 Other languages' sdk is under planning. 
