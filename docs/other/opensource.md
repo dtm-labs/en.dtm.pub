@@ -17,7 +17,6 @@ The following is a comparison of the main features of dtm and Seata.
 | Transactional Messaging | <span style="color:green">✓</span>                                                            | <span style="color:red">✗</span>                                                                 | dtm provides Transactional Messaging similar to RocketMQ               |
 | Communication protocols | <span style="color:green">HTTP, gRPC</span>                                                   | <span style="color:green">Dubbo, no HTTP</span>                                             |                                                                     |
 | star count              | <img src="https://img.shields.io/github/stars/yedf/dtm.svg?style=social" alt="github stars"/> | <img src="https://img.shields.io/github/stars/seata/seata.svg?style=social" alt="github stars"/> | dtm 0.1 is released from 20210604 and under fast development                    |
-|                         |                                                                                               |                                                                                                  |                                                                     |
 
-From the features comparison above, if your language stack includes languages other than Java, then dtm is the one for you. 
+From the features comparison above, if your language stack includes languages other than Java, then dtm is the one for you.
 If your language stack is Java, you can also choose to access dtm and use sub-transaction barrier technology to simplify your business development.

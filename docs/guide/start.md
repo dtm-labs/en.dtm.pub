@@ -2,7 +2,7 @@
 
 ## What is DTM
 
-DTM is the first distributed transaction management framework in golang. 
+DTM is the first distributed transaction management framework in golang.
 Unlike other frameworks, DTM provides extremely easy access to HTTP and gRPC, supports multiple language bindings, and handles tricky problems of unordered sub-transactions at the framework level.
 
 Learn more behind the design of DTM in [why choose DTM](./why).
@@ -16,14 +16,14 @@ Learn more behind the design of DTM in [why choose DTM](./why).
   - Relieving developers from worrying about suspension, null compensation, idempotent transaction, and other tricky problems, the framework layer handles them all
 
 * Language-agnostic
-  - Suitable for companies with multiple-language stacks. 
+  - Suitable for companies with multiple-language stacks.
     Easy to write bindings for go, python, php, nodejs, ruby and other languages.
 
 * Easy to deploy, easy to extend
   - DTM depends only on mysql, easy to deploy, cluster, and scale horizontally
 
-* Support for multiple distributed transaction protocol 
-  - TCC, SAGA, XA, transaction messages
+* Support for multiple distributed transaction protocol
+  - TCC, SAGA, XA, Transactional messages
 
 Invited speaker at the China Database Conference. [Distributed Transaction Practice in Multi-Language Environment](http://dtcc.it168.com/yicheng.html#b9)
 
@@ -66,8 +66,8 @@ You can run the example in the dtm directory with the following command
 In this example, a saga distributed transaction is created and then committed to dtm, with key code shown below:
 
 ``` go
-	req := &gin.H{"amount": 30} // microservice load threshold
-	// DtmServer is the address of DTM microservice
+	req := &gin.H{"amount": 30} // micro-service load threshold
+	// DtmServer is the address of DTM micro-service
 	saga := dtmcli.NewSaga(DtmServer, dtmcli.MustGenGid(DtmServer)).
 		// add a TransOut subtraction，forward operation with url: qsBusi+"/TransOut", reverse compensation operation with url: qsBusi+"/TransOutCompensate"
 		Add(qsBusi+"/TransOut", qsBusi+"/TransOutCompensate", req).
@@ -112,7 +112,7 @@ The entire transaction completes successfully eventually with the following timi
 ![saga_normal](../imgs/saga_normal.jpg)
 
 In a real business, it is possible that a sub-transaction may fail.
-For example, the destination sub-account is freezed, causing the transfer to fail. 
+For example, the destination sub-account is freezed, causing the transfer to fail.
 Let's modify the business code to purposely fail the forward operation of TransIn and watch what happens.
 
 ``` go
@@ -132,11 +132,10 @@ Notice that in case the transfer operation fails, the TransIn and TransOut compe
 We have just briefly described a complete distributed transaction, including a success, and a rollback.
 Now that you should have a concrete understanding of distributed transactions in DTM, keep learning this tutorial to learn step-by-step the technical solutions and techniques for handling distributed transactions.
 
-## Discussion Group
+## Slack
 
-WeChat: add friend with id yedf2008, or scan the OR code. Fill in dtm as verification.
+You can join the [DTM slack channel here](https://join.slack.com/t/dtm-w6k9662/shared_invite/zt-vkrph4k1-eFqEFnMkbmlXqfUo5GWHWw)
 
-![yedf2008](http://service.ivydad.com/cover/dubbingb6b5e2c0-2d2a-cd59-f7c5-c6b90aceb6f1.jpeg)
+## Give a Star! ⭐
 
-Please star if you think [dtm](https://github.com/yedf/dtm) is good or helpful!
-
+If you think this project is good, or helpful to you, please give a star!
