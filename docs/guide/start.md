@@ -29,9 +29,13 @@ Invited speaker at the China Database Conference. [Distributed Transaction Pract
 
 ## Companies that adopt dtm
 
-[Ivydad 常青藤爸爸](https://ivydad.com)
+[Ivydad](https://ivydad.com)
 
-[Eglass 视咖镜小二](https://epeijing.cn)
+[Eglass](https://epeijing.cn)
+
+[Jiou](http://jiou.me)
+
+[GoldenData](./start)
 
 <a style="
     background-color:#646cff;
