@@ -4,7 +4,7 @@ module.exports = {
   lang: 'en-US',
   head: [
     ['link', { rel: 'icon', type: 'image/svg', href: '/dtm.svg' }],
-    ['script', { defer: true, type: 'text/javascript', src: 'https://s9.cnzz.com/z_stat.php?id=1280154965&web_id=1280154965' }]
+    ['script', { defer: true, type: 'text/javascript', src: 'https://v1.cnzz.com/z_stat.php?id=1280325584&web_id=1280325584' }]
   ],
   themeConfig: {
     logo: '/dtm.svg',
