@@ -1,6 +1,6 @@
 module.exports = {
   title: 'DTM tutorial',
-  description: 'Distributed transanction management in Go',
+  description: 'Distributed transaction management in Go',
   lang: 'en-US',
   head: [
     ['link', { rel: 'icon', type: 'image/svg', href: '/dtm.svg' }],
