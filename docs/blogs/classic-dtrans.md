@@ -1,261 +1,375 @@
-# 分布式事务最经典的七种解决方案
+# The seven most classic solutions for distributed transaction management
 
-随着业务的快速发展、业务复杂度越来越高，几乎每个公司的系统都会从单体走向分布式，特别是转向微服务架构。随之而来就必然遇到分布式事务这个难题，这篇文章总结了分布式事务最经典的解决方案，分享给大家。
+With the rapid development of business and increasing business complexity, almost every company's system will move from the monolithic architecture to a distributed, especially microservice-based one. 
+Naturally with this change comes the challenging difficulty of distributed transactions.
+In this blog, the seven most classic solutions for distributed transaction management have been summarized.
 
-## 基础理论
-在讲解具体方案之前，我们先了解一下分布式事务所涉及到的基础理论知识。
+## Basic theory
 
-我们拿转账作为例子，A需要转100元给B，那么需要给A的余额-100元，给B的余额+100元，整个转账要保证，A-100和B+100同时成功，或者同时失败。看看在各种场景下，是如何解决这个问题的。
+Before explaining the our DTM solution, let's review some basic theoretical knowledge necessary for distributed transactions.
 
-### 事务
-把多条语句作为一个整体进行操作的功能，被称为数据库事务。数据库事务可以确保该事务范围内的所有操作都可以全部成功或者全部失败。
+Let's take a money transfer as an example: A wants to transfer $100 to B.
+What needs to be done is thus to subtract $100 from A's balance and to add $100 to B's balance.
+The guarantee must be provided that the entire transfer, namely A-$100 and B+$100, either succeeds or fails atomically as a whole. 
+Let's see how this problem is solved in various scenarios.
 
-事务具有 4 个属性：原子性、一致性、隔离性、持久性。这四个属性通常称为 ACID 特性。
+### Transactions
 
-- Atomicity（原子性）：一个事务中的所有操作，要么全部完成，要么全部不完成，不会结束在中间某个环节。事务在执行过程中发生错误，会被恢复到事务开始前的状态，就像这个事务从来没有执行过一样。
-- Consistency（一致性）：在事务开始之前和事务结束以后，数据库的完整性没有被破坏。完整性包括外键约束、应用定义的等约束不会被破坏。
-- Isolation（隔离性）：数据库允许多个并发事务同时对其数据进行读写和修改的能力，隔离性可以防止多个事务并发执行时由于交叉执行而导致数据的不一致。
-- Durability（持久性）：事务处理结束后，对数据的修改就是永久的，即便系统故障也不会丢失。
+The functionality to execute multiple statements as a whole is known as a database transaction.
+A database transaction ensures that all operations within the scope of that transaction either all succeed or all fail.
 
-###  分布式事务
+Transactions have four properties: atomicity, consistency, isolation, and persistence. 
+These four properties are commonly referred to as ACID characteristics.
 
-银行跨行转账业务是一个典型分布式事务场景，假设A需要跨行转账给B，那么就涉及两个银行的数据，无法通过一个数据库的本地事务保证转账的ACID，只能够通过分布式事务来解决。
+- Atomicity: All operations in a transaction either complete or do not complete, but never end at some point in the middle.
+  A transaction that meets an error during execution is rolled back so that the system is restored to the state it was in before the transaction began, as if the transaction had never been executed.
 
-分布式事务就是指事务的发起者、资源及资源管理器和事务协调者分别位于分布式系统的不同节点之上。在上述转账的业务中，用户A-100操作和用户B+100操作不是位于同一个节点上。本质上来说，分布式事务就是为了保证在分布式场景下，数据操作的正确执行。
+- Consistency: The integrity of the database is not broken before the transaction starts and after the transaction ends.
+  Integrity including foreign key constraints, application-defined constraints, etc, will not be broken.
 
-分布式事务在分布式环境下，为了满足可用性、性能与降级服务的需要，降低一致性与隔离性的要求，一方面遵循 BASE 理论（BASE相关理论，涉及内容非常多，感兴趣的同学，可以参考BASE理论）：
+- Isolation: The database allows multiple concurrent transactions to read, write and modify its data at the same time.
+  Isolation prevents data inconsistencies due to cross-execution when multiple transactions are executed concurrently.
 
-基本业务可用性（Basic Availability）
-柔性状态（Soft state）
-最终一致性（Eventual consistency）
-同样的，分布式事务也部分遵循 ACID 规范：
+- Persistence: After the transaction is finished, the modification of the data is permanent and will not be lost even if the system fails.
 
-原子性：严格遵循
-一致性：事务完成后的一致性严格遵循；事务中的一致性可适当放宽
-隔离性：并行事务间不可影响；事务中间结果可见性允许安全放宽
-持久性：严格遵循
+### Distributed transactions
 
-## 分布式事务的解决方案
-### 两阶段提交/XA
+A typical distributed transaction scenario is the inter-bank money transfer.
+Suppose A needs to transfer money to B across banks.
+The scenario involves data from two banks, thus the ACID of the transfer cannot be guaranteed by a local transaction in one database, but only be solved by a distributed transaction.
 
-XA是由X/Open组织提出的分布式事务的规范，XA规范主要定义了(全局)事务管理器(TM)和(局部)资源管理器(RM)之间的接口。本地的数据库如mysql在XA中扮演的是RM角色
+A distributed transaction means that the transaction initiator, the resource and resource manager and the transaction coordinator are located on different nodes of the distributed system.
+In the above inter-bank transfer scenarios, the A-$100 operation and the B+$100 operation are not located on the same node.
+In essence, distributed transactions aims to ensure the correct execution of data operations in a distributed scenario.
 
-XA一共分为两阶段：
+On one hand, distributed transactions follow the BASE (Basically Available, Soft state, and Eventually consistent) theory in a distributed environment in order to meet the needs of availability, performance and degraded services, while reducing the requirements of consistency and isolation:
 
-第一阶段（prepare）：即所有的参与者RM准备执行事务并锁住需要的资源。参与者ready时，向TM报告已准备就绪。
-第二阶段 (commit/rollback)：当事务管理者(TM)确认所有参与者(RM)都ready后，向所有参与者发送commit命令。
-目前主流的数据库基本都支持XA事务，包括mysql、oracle、sqlserver、postgre
+- Basic Availability
+- Soft state
+- Eventual consistency
 
-XA 事务由一个或多个资源管理器（RM）、一个事务管理器（TM）和一个应用程序（ApplicationProgram）组成。
+On the other hand, distributed transactions also partially follow the ACID specification.
 
-把上面的转账作为例子，一个成功完成的XA事务时序图如下：
+- Atomicity: strict compliance
+- Consistency: Consistency after the transaction is completed is strictly followed; consistency in the transaction can be relaxed appropriately
+- Isolation: no influence between parallel transactions; visibility of intermediate results of transactions is allowed to be relaxed in a safe manner
+- Persistence: Strictly followed
+
+## Solutions for distributed transaction management
+
+### Two-phase commit/XA
+
+XA is a specification for distributed transactions proposed by the X/Open organization. 
+The XA specification mainly defines the interface between a (global) Transaction Manager (TM) and a (local) Resource Manager (RM). 
+Local databases such as mysql play the RM role in the XA specification.
+
+XA is divided into two phases.
+
+ - Phase 1 (prepare): All participating RMs prepare to execute their transactions and lock the required resources. 
+   When the participants are ready, they report to TM that they are ready.
+
+ - Phase 2 (commit/rollback): When the transaction manager (TM) confirms that all participants (RM) are ready, it sends a commit command to all participants.
+
+At present, almost all mainstream databases support XA transactions, including mysql, oracle, sqlserver, postgre
+
+XA transaction consists of one or more resource manager (RM), one transaction manager (TM), and one application program (AP).
+
+Taking the inter-bank transfer as an example,  the timing diagram for a successful XA transaction is shown below:：
 ![image.png](../imgs/xa_normal.jpg)
 
-如果有任何一个参与者prepare失败，那么TM会通知所有完成prepare的参与者进行回滚。
+If a prepare phase operation of any participant fails, DTM will call xa rollback of each child transaction to roll back, and the transaction is successfully rolled back at last.
 
-XA事务的特点是：
+The features of XA transactions are
 
-- 简单易理解，开发较容易
-- 对资源进行了长时间的锁定，并发度低
+- Simple to understand and easier to develop
+- Long locking of resources and low concurrency
 
-如果读者想要进一步研究XA，go语言可参考[DTM](https://github.com/yedf/dtm)，java语言可参考[seata](https://github.com/seata/seata)
+If readers want to study XA further, refer to [DTM](https://github.com/yedf/dtm) for go language, or [seata](https://github.com/seata/seata) for java language.
 
-### SAGA
+# SAGA
 
-Saga是这一篇数据库论文saga提到的一个方案。其核心思想是将长事务拆分为多个本地短事务，由Saga事务协调器协调，如果正常结束那就正常完成，如果某个步骤失败，则根据相反顺序一次调用补偿操作。
+SAGA originally appeared in the paper [SAGAS](https://www.cs.cornell.edu/andru/cs711/2002fa/reading/sagas.pdf) published by Hector Garcia-Molina and Kenneth Salem in 1987. 
+The key idea is to write a long-lived transaction as multiple short local transactions, collectively termed as a SAGA and coordinated by the SAGA transaction coordinator.
+If all sub-transactions of a SAGA complete, the SAGA completes successfully.
+If one sub-transaction fails, the compensating transactions will be invoked one at a time in the reverse order.
 
-把上面的转账作为例子，一个成功完成的SAGA事务时序图如下：
+Suppose we want to perform an inter-bank transfer.
+A typical timing diagram for a successfully completed SAGA transaction would be as follows:
 
 ![image.png](../imgs/saga_normal.jpg)
-SAGA事务的特点：
 
-- 并发度高，不用像XA事务那样长期锁定资源
-- 需要定义正常操作以及补偿操作，开发量比XA大
-- 一致性较弱，对于转账，可能发生A用户已扣款，最后转账又失败的情况
+Features of SAGA transactions are:
 
-论文里面的SAGA内容较多，包括两种恢复策略，包括分支事务并发执行，我们这里的讨论，仅包括最简单的SAGA
+- High concurrency, no long-term locking of resources like XA transactions
+- Need to define normal operation and compensation operation, thus the development demand is higher than XA
+- Weak consistency. Taking transferring money for example, the intermediate state where the money has been deducted from user A's account but the transfer fails finally may be seen
 
-SAGA适用的场景较多，长事务适用，对中间结果不敏感的业务场景适用
+Our discussion here only includes the simplest SAGA.
+There are more SAGA contents in the paper, including two recovery strategies, including parallel execution of branch transactions.
 
-如果读者想要进一步研究SAGA，go语言可参考[DTM](https://github.com/yedf/dtm)，java语言可参考[seata](https://github.com/seata/seata)
+SAGA is applicable to a wide range of scenarios, including long transactions and business scenarios that are not sensitive to intermediate results.
+
+If readers want to study SAGA further, refer to [DTM](https://github.com/yedf/dtm) for go language, or refer to [seata](https://github.com/seata/seata) for java language.
 
 ### TCC
-关于 TCC（Try-Confirm-Cancel）的概念，最早是由 Pat Helland 于 2007 年发表的一篇名为《Life beyond Distributed Transactions:an Apostate’s Opinion》的论文提出。
 
-TCC分为3个阶段
+TCC (Try, Confirm, Cancel), and was first proposed by Pat Helland in 2007 in the paper called "Life beyond Distributed Transactions: an Apostate's Opinion".
 
-- Try 阶段：尝试执行，完成所有业务检查（一致性）, 预留必须业务资源（准隔离性）
-- Confirm 阶段：确认执行真正执行业务，不作任何业务检查，只使用 Try 阶段预留的业务资源，Confirm 操作要求具备幂等设计，Confirm 失败后需要进行重试。
-- Cancel 阶段：取消执行，释放 Try 阶段预留的业务资源。Cancel 阶段的异常和 Confirm 阶段异常处理方案基本上一致，要求满足幂等设计。
+TCC is divided into 3 phases
 
-把上面的转账作为例子，通常会在Try里面冻结金额，但不扣款，Confirm里面扣款，Cancel里面解冻金额，一个成功完成的TCC事务时序图如下：
+- Try phase: The requestor requests the service provider to perform a tentative operation.
+  The provider shall complete all business validations (consistency), and reserve required business resources (quasi-isolation).
+
+- Confirm phase: If the provider completes the Try phase successfully, the requestor can execute a confirmation operation on the provider if it decides to move forward.
+  The Confirm phase is where the business is actually conducted.
+  No more business validations will be performed, and only those business resources reserved in the Try phase will be used.
+  The Confirm phase needs to be idempotent.
+  Furthermore, the Confirm phase retries if it fails.
+
+- Cancel phase: The requestor can execute a cancellation operation on the provider if it decides not to move forward, e.g., when the provider does not complete the Try phase successfully.
+  Business resources reserved in the Try phase should be released in the Cancel phase.
+  Just like the Confirm phase, The Cancel phase needs to be idempotent, and retires if fails.
+
+Suppose we want to perform an inter-bank transfer, using TransOut and TransIn implemented in separate micro-services.
+Normally we freeze the back account in Try (no deduction yet), decrease the balance in Confirm, and unfreeze in Cancel.
+A typical timing diagram for a successfully completed transaction using the TCC transaction model is as follows:
 
 ![image.png](../imgs/tcc_normal.jpg)
 
-TCC特点如下：
+The features of TCC are the following:
 
-- 并发度较高，无长期资源锁定。
-- 开发量较大，需要提供Try/Confirm/Cancel接口。
-- 一致性较好，不会发生SAGA已扣款最后又转账失败的情况
-- TCC适用于订单类业务，对中间状态有约束的业务
+- Higher concurrency and no long-term resource locking.
+- Higher demand on development, since we need to provide Try/Confirm/Cancel interface.
+- Consistency is better than SAGA, where intermediate state of balance deduction but transfer failure may occur
+- TCC is thus suitable for order-related business with constraints on intermediate state
 
-如果读者想要进一步研究TCC，go语言可参考[DTM](https://github.com/yedf/dtm)，java语言可参考[seata](https://github.com/seata/seata)
+If readers want to study TCC further, refer to [DTM](https://github.com/yedf/dtm) for go, or [seata](https://github.com/seata/seata) for java language. 
 
-### 本地消息表
+### Local Messaging
 
-本地消息表这个方案最初是 ebay 架构师 Dan Pritchett 在 2008 年发表给 ACM 的文章。设计核心是将需要分布式处理的任务通过消息的方式来异步确保执行。
+The Local Messaging solution was originally published to ACM by ebay architect Dan Pritchett in 2008. 
+The key idea is to introduce a persistent message queue to execute tasks that require distributed processing in an asynchronous manner.
 
-大致流程如下：
+The general flow is as follows:
 
 ![image.png](../imgs/local_msg_table.jpg)
-写本地消息和业务操作放在一个事务里，保证了业务和发消息的原子性，要么他们全都成功，要么全都失败。
 
-容错机制：
+By queueing a persistent message within the same transaction as the business operation, the atomicity of that business operation and messaging is guaranteed.
+They either all complete or they both fail.
 
-- 扣减余额事务 失败时，事务直接回滚，无后续步骤
-- 轮序生产消息失败， 增加余额事务失败都会进行重试
+Fault tolerance:
 
-本地消息表的特点：
+- When the balance deduction transaction fails, the transaction is rolled back directly, with no subsequent steps
 
-- 长事务仅需要分拆成多个任务，使用简单
-- 生产者需要额外的创建消息表
-- 每个本地消息表都需要进行轮询
-- 消费者的逻辑如果无法通过重试成功，那么还需要更多的机制，来回滚操作
+- When the polling of messages produced or the balance addition transaction fails, it will be retried
 
-适用于可异步执行的业务，且后续操作无需回滚的业务
+Features of Local Messaging:
 
-### 事务消息
+- Long transactions only need to be split into multiple tasks, which is easy to use
 
-在上述的本地消息表方案中，生产者需要额外创建消息表，还需要对本地消息表进行轮询，业务负担较重。阿里开源的RocketMQ 4.3之后的版本正式支持事务消息，该事务消息本质上是把本地消息表放到RocketMQ上，解决生产端的消息发送与本地事务执行的原子性问题。
+- Producers need to create additional message tables
 
-事务消息发送及提交：
+- Each local message table needs to be polled
 
-- 发送消息（half消息）
-- 服务端存储消息，并响应消息的写入结果
-- 根据发送结果执行本地事务（如果写入失败，此时half消息对业务不可见，本地逻辑不执行）
-- 根据本地事务状态执行Commit或者Rollback（Commit操作发布消息，消息对消费者可见）
+- Consumer-side logic requires additional mechanisms to roll back operations if they do not succeed by retrying
 
-正常发送的流程图如下：
+The Local Messaging model is suitable for asynchronous tasks that need no rollback operations.
+
+### Transactional Messaging
+
+In the local messaging solution described above, the producer is responsible for creating and polling the local message table, leading to severe burden.
+RocketMQ opensourced by alibaba supports Transactional Messaging starting from v4.3 version.
+What RocketMQ essentially does is to deligate the local message table to RocketMQ, to achieve the atomicity on the producer's side to send message and execute local transaction.
+
+Transactional Messaging model:
+
+- Sending a message (half message)
+- The server stores the message and responds with the result of writing the message
+- Execute the local transaction according to the result of sending (if the write fails, the half message is not visible to the business and the local logic is not executed)
+- Execute Commit or Rollback according to the status of the local transaction (Commit operation publishes the message and the message is visible to the consumer)
+
+The flow chart for normal sending is as follows.
 
 ![image.png](../imgs/msg_trans.jpg)
 
-补偿流程：
+Compensation process:
 
-对没有Commit/Rollback的事务消息（pending状态的消息），从服务端发起一次“回查”
-Producer收到回查消息，返回消息对应的本地事务的状态，为Commit或者Rollback
-事务消息方案与本地消息表机制非常类似，区别主要在于原先相关的本地表操作替换成了一个反查接口
+A "check" is initiated from the server for messages with no Commit/Rollback (messages in the pending state).
+Producer receives the check message and returns the status of the local transaction corresponding to the message as Commit or Rollback.
+The transactional messaging model is very similar to the local messaging model.
+The main difference is that the local table operation is replaced by a check interface.
 
-事务消息特点如下：
+Features of the Transactional Messaging model are the following:
 
-- 长事务仅需要分拆成多个任务，并提供一个反查接口，使用简单
-- 消费者的逻辑如果无法通过重试成功，那么还需要更多的机制，来回滚操作
+- Only need to split long transactions into multiple tasks, and provide a backchecking interface, which is simple to use
+- Consumer logic requires additional mechanisms to roll back operations if they fail to succeed through retries
 
-适用于可异步执行的业务，且后续操作无需回滚的业务
+Suitable for operations that can be executed asynchronously and where subsequent operations do not need to be rolled back
 
-如果读者想要进一步研究事务消息，可参考[rocketmq](https://github.com/apache/rocketmq)，为了方便大家学习事务消息，[DTM](https://github.com/yedf/dtm)也提供了简单实现
+Refer to [rocketmq](https://github.com/apache/rocketmq) if you want to further study transaction messages. 
+Our [DTM](https://github.com/yedf/dtm) also provides a simple implementation to facilitate learning transaction messages.
 
-### 最大努力通知
+### Best-effort Notification
 
-发起通知方通过一定的机制最大努力将业务处理结果通知到接收方。具体包括：
+The initiating notifier notifies the receiver of the result of the business processing with a certain mechanism of best effort.
+Specifically:
 
-有一定的消息重复通知机制。因为接收通知方可能没有接收到通知，此时要有一定的机制对消息重复通知。
-消息校对机制。如果尽最大努力也没有通知到接收方，或者接收方消费消息后要再次消费，此时可由接收方主动向通知方查询消息信息来满足需求。
-前面介绍的的本地消息表和事务消息都属于可靠消息，与这里介绍的最大努力通知有什么不同？
+- Notification of messages can be repeated. 
+  Because the receiving side may not receive the notification, there should be some mechanism to repeat the notification of the message.
 
-可靠消息一致性，发起通知方需要保证将消息发出去，并且将消息发到接收通知方，消息的可靠性关键由发起通知方来保证。
+- Messages can be checked. 
+  If the receiver is not notified even after maximum efforts, or if the receiver consumes the message but wants to consume it again, the receiver should be allowed to actively query the message information from the initiating notifier.
 
-最大努力通知，发起通知方尽最大的努力将业务处理结果通知为接收通知方，但是可能消息接收不到，此时需要接收通知方主动调用发起通知方的接口查询业务处理结果，通知的可靠性关键在接收通知方。
+What is the difference between the Local Messaging and the Transactional Messaging models introduced earlier, which both produce reliable messages, and the Best-effort Notification model introduced here?
 
-解决方案上，最大努力通知需要：
+With the former two models, the initiating notifier ensures that the message is sent out and then to the receiving side.
+In other words, the reliability of the message is guaranteed by the notifying side.
 
-- 提供接口，让接受通知放能够通过接口查询业务处理结果
-- 消息队列ACK机制，消息队列按照间隔1min、5min、10min、30min、1h、2h、5h、10h的方式，逐步拉大通知间隔 ，直到达到通知要求的时间窗口上限。之后不再通知
+With the Best-effort Notification model, the initiating notifier does its best to notify the result of the business processing to the receiver, but the message may still not be received.
+As a result, the receiving side needs to actively call the initiating notifier's interface to query the result of the business processing, which means that the reliability of the notification relies on the receiving side.
 
-最大努力通知适用于业务通知类型，例如微信交易的结果，就是通过最大努力通知方式通知各个商户，既有回调通知，也有交易查询接口
+A solution using the Best-effort Notification model should:
 
-### AT事务模式
+- Provide an interface to allow the receiving side to actively query the results of the business processing 
 
-这是阿里开源项目[seata](https://github.com/seata/seata)中的一种事务模式，在蚂蚁金服也被称为FMT。优点是该事务模式使用方式，类似XA模式，业务无需编写各类补偿操作，回滚由框架自动完成，缺点也类似AT，存在较长时间的锁，不满足高并发的场景。有兴趣的同学可以参考[seata-AT](http://seata.io/zh-cn/docs/dev/mode/xa-mode.html)
+- Setup ACK mechanism of messaging, which means the notification interval is gradually increased with the interval of 1min, 5min, 10min, 30min, 1h, 2h, 5h, 10h, until it reaches the upper limit of the time window of notification requirements. 
+  No further notifications are made after that.
 
-## 异常处理
+Best-effort Notification is applicable to business notification scenarios.
+For example, the results of WeChat transactions are notified to each merchant through Best-effort Notification model, with both callback notifications and transaction query interfaces.
 
-在分布式事务的各个环节都有可能出现网络以及业务故障等问题，这些问题需要分布式事务的业务方做到防空回滚，幂等，防悬挂三个特性。
+Best-effort Notification can be considered more of a business design.
+In the infrastructure layer, one can use Transaction Messaging directly.
 
-### 异常情况
+### AT
 
-下面以TCC事务说明这些异常情况：
+This is a transaction pattern implemented in the Ali open source project [Seata](https://github.com/seata/seata), also known as FMT in Ant Financial Services.
 
-**空回滚：**
+- The advantage of this transaction model is similar to the XA model.
+  The business code does not need to provide all kinds of compensation operations, and rollback is done automatically by the framework.
 
-　　在没有调用 TCC 资源 Try 方法的情况下，调用了二阶段的 Cancel 方法，Cancel 方法需要识别出这是一个空回滚，然后直接返回成功。
+- The Disadvantage is also similar to XA.
+  The locking is longer and does not meet the high concurrency scenario.
 
-　　出现原因是当一个分支事务所在服务宕机或网络异常，分支事务调用记录为失败，这个时候其实是没有执行Try阶段，当故障恢复后，分布式事务进行回滚则会调用二阶段的Cancel方法，从而形成空回滚。
+Please refer to [Seata-AT](http://seata.io/zh-cn/docs/dev/mode/xa-mode.html) if you are interested to know more.
 
-**幂等**：
+## Exception handling
 
-　　由于任何一个请求都可能出现网络异常，出现重复请求，所以所有的分布式事务分支，都需要保证幂等性
+Network failures and business problems can happen in all aspects of distributed transactions.
+Consequently, the business side of distributed transactions need to implement the three characteristics of anti-empty rollback, idempotent, and anti-suspension.
 
-**悬挂：**
+### Exceptions
 
-　　悬挂就是对于一个分布式事务，其二阶段 Cancel 接口比 Try 接口先执行。
+Common exceptions are illustrated using the TCC transaction model:
 
-　　出现原因是在 RPC 调用分支事务try时，先注册分支事务，再执行RPC调用，如果此时 RPC 调用的网络发生拥堵，RPC 超时以后，TM就会通知RM回滚该分布式事务，可能回滚完成后，RPC 请求才到达参与者真正执行。
+**Empty Rollback:**
 
-下面看一个网络异常的时序图，更好的理解上述几种问题
+The second-stage Cancel method is called without calling the Try method of TCC.
+The Cancel method needs to recognize that this is an empty rollback and then return success directly.
+
+The reason for this exception is that when the node assigned to the branch is down in service or facing network abnormalities, the branch transaction call will be recorded as a failure, although there is actually no execution of the Try phase.
+When the service is returned, the distributed transaction manager opts for rollback that calls the Cancel method of the second phase, thus resulting into an empty rollback.
+
+**Idempotent:**
+
+Since any one request can have network exceptions and duplicate requests happen, all distributed transaction branches need to guarantee to be idempotent.
+
+**Suspension:**
+
+A suspension is a distributed transaction for which the second-stage Cancel interface is executed before the Try interface.
+The Try method needs to recognize that this is a suspension and return a direct failure.
+
+The reason for this exception is that when a branch transaction try is called via RPC, the expected order is to registered branch transaction first, and then make the RPC call.
+If the network infrastructure for the RPC call is congested at this time, the RPC will timeout, after which TM will notify RM to roll back the distributed transaction.
+Suspension occurs if the rollback cannot be completed before the RPC request reaches the participant for real execution.
+
+## Causes of Exceptions
+
+See below a timing diagram of a network exception to better understand the above types of problems
+
 ![image.png](../imgs/exception.jpg)
 
-业务处理请求4的时候，Cancel在Try之前执行，需要处理空回滚
-业务处理请求6的时候，Cancel重复执行，需要幂等
-业务处理请求8的时候，Try在Cancel后执行，需要处理悬挂
+- When the business processes request 4, Cancel is executed before Try, resulting into null rollback that needs addressing
 
-面对上述复杂的网络异常情况，目前看到各家建议的方案都是业务方通过唯一键，去查询相关联的操作是否已完成，如果已完成则直接返回成功。相关的判断逻辑较复杂，易出错，业务负担重。
+- When business processing request 6, Cancel is executed repeatedly and needs to be handled in an idempotent manner
 
-### 子事务屏障
+- When business processing request 8, Try is executed after Cancel, resulting into suspension that needs addressing
 
-在项目[https://github.com/yedf/dtm](https://github.com/yedf/dtm)中，出现了一种子事务屏障技术，使用该技术，能够达到这个效果，看示意图：
-![image.png](../imgs/barrier.jpg)
+## Exception problems
 
-所有这些请求，到了子事务屏障后：不正常的请求，会被过滤；正常请求，通过屏障。开发者使用子事务屏障之后，前面所说的各种异常全部被妥善处理，业务开发人员只需要关注实际的业务逻辑，负担大大降低。
-子事务屏障提供了方法ThroughBarrierCall，方法的原型为：
+In the face of the above complex network anomalies, the proposed solutions given by various distributed transaction frameworks are currently seen to be mainly the following: The business side queries whether the associated operation has been completed by a unique key, and returns success directly if it has been completed.
 
+For the above scheme, each business needs to be handled separately, and the related judgment logic is more complex, error-prone and business-loaded, which is a pain point for landing distributed transactions.
 
-```
+We will present dtm's original solution in the next section.
+
+### Sub-transaction barriers
+
+We have pioneered the sub-transaction barrier technique in [https://github.com/yedf/dtm](https://github.com/yedf/dtm).
+The outcome of using sub-transaction barrier is shown below:
+
+![image](../imgs/barrier.jpg)
+
+For all requests that arrive at the sub-transaction barrier: abnormal requests are filtered; validated requests pass through the barrier.
+After the developer uses the sub-transaction barrier, all kinds of exceptions described earlier in the tutorial are handled properly.
+The business developer only needs to focus on the actual business logic, and the burden is greatly reduced.
+The sub-transaction barrier technique provides the method ThroughBarrierCall, signature of which is shown below:
+
+``` go
 func ThroughBarrierCall(db *sql.DB, transInfo *TransInfo, busiCall BusiFunc)
 ```
 
-业务开发人员，在busiCall里面编写自己的相关逻辑，调用该函数。ThroughBarrierCall保证，在空回滚、悬挂等场景下，busiCall不会被调用；在业务被重复调用时，有幂等控制，保证只被提交一次。
+Business developers write their specific business logic inside busiCall, and call ThroughBarrierCall with it. 
+ThroughBarrierCall guarantees that busiCall will not be called in scenarios such as empty rollback, suspension, etc, and that, when the business service is called repeatedly, proper idempotent control ensures that it is committed only once.
 
-子事务屏障会管理TCC、SAGA、XA、事务消息等，也可以扩展到其他领域
+sub-transaction barrier recognizes and manages TCC, SAGA, XA,  transaction messages, etc., and can also be extended to other areas.
 
-### 子事务屏障原理
+#### Mechanism
 
-子事务屏障技术的原理是，在本地数据库，建立分支事务状态表sub_trans_barrier，唯一键为全局事务id-子事务id-子事务分支名称（try|confirm|cancel）
+The mechanism of sub-transaction barrier technology is to create a branch transaction status table sub_trans_barrier in the local database, with the unique key of global transaction id - sub-transaction id - sub-transaction branch name (try|confirm|cancel).
 
-- 开启事务
-- 如果是Try分支，则那么insert ignore插入gid-branchid-try，如果成功插入，则调用屏障内逻辑
-- 如果是Confirm分支，那么insert ignore插入gid-branchid-confirm，如果成功插入，则调用屏障内逻辑
-- 如果是Cancel分支，那么insert ignore插入gid-branchid-try，再插入gid-branchid-cancel，如果try未插入并且cancel插入成功，则调用屏障内逻辑
-- 屏障内逻辑返回成功，提交事务，返回成功
-- 屏障内逻辑返回错误，回滚事务，返回错误
+- Open transaction
 
-在此机制下，解决了网络异常相关的问题
+- If it is Try branch, insert ignore gid-branchid-try.
+  If insert is successful, call the logic inside the barrier.
 
-- 空补偿控制--如果Try没有执行，直接执行了Cancel，那么Cancel插入gid-branchid-try会成功，不走屏障内的逻辑，保证了空补偿控制
-- 幂等控制--任何一个分支都无法重复插入唯一键，保证了不会重复执行
-- 防悬挂控制--Try在Cancel之后执行，那么插入的gid-branchid-try不成功，就不执行，保证了防悬挂控制
+- If it is Confirm branch, insert ignore gid-branchid-confirm
+  If insert is successful, invoke the in-barrier logic.
 
-对于SAGA事务，也是类似的机制。
+- If it is Cancel branch, insert ignore gid-branchid-try and then gid-branchid-cancel.
+  If try is not inserted but cancel is inserted successfully, call the in-barrier logic.
 
-### 子事务屏障小结
+- The logic inside the barrier completes successfully, commits the transaction, and returns success.
 
-子事务屏障技术，为[https://github.com/yedf/dtm](https://github.com/yedf/dtm)首创，它的意义在于设计简单易实现的算法，提供了简单易用的接口，在首创，它的意义在于设计简单易实现的算法，提供了简单易用的接口，在这两项的帮助下，开发人员彻底的从网络异常的处理中解放出来。
+- If the logic inside the barrier returns an error, the transaction is rolled back and an error is returned.
 
-该技术目前需要搭配[yedf/dtm](https://github.com/yedf/dtm)事务管理器，目前SDK已经提供给go语言的开发者。其他语言的sdk正在规划中。对于其他的分布式事务框架，只要提供了合适的分布式事务信息，能够按照上述原理，快速实现该技术。
+With this mechanism, network exception-related problems are solved.
 
-## 总结
+- Empty compensation control.
+  If Try is not executed and Cancel is executed directly, the Cancel inserting gid-branchid-try will succeed and the logic inside the barrier is not taken, ensuring empty compensation control.
 
-本文介绍了分布式事务的一些基础理论，并对常用的分布式事务方案进行了讲解，在文章的后半部分还给出了事务异常的原因、分类以及优雅的解决方案。
+- Idempotent control.
+  Any branch can not repeat the insertion of unique keys, to ensure that no repeated execution.
 
-[yedf/dtm](https://github.com/yedf/dtm)支持了TCC、XA、SAGA、事务消息、最大努力通知（使用事务消息实现），提供了简洁易用的接入。
+- Anti-hanging control.
+  When Try is executed after Cancel, the inserted gid-branchid-try will not be executed if it is unsuccessful, ensuring anti-hanging control.
 
-欢迎大家访问[https://github.com/yedf/dtm](https://github.com/yedf/dtm)项目，给颗星星支持！
+For SAGA and transaction messages, it is a similar mechanism.
+
+#### Summary for sub-transaction barrier
+
+Sub-transaction barrier technology, pioneered by [https://github.com/yedf/dtm](https://github.com/yedf/dtm), is significant in designing simple and easy-to-implement algorithms and providing easy-to-use interfaces. 
+With the help of these two items, developers are completely freed from the handling of network exceptions.
+
+The technology currently requires the [yedf/dtm](https://github.com/yedf/dtm) transaction manager, and the SDK is currently available to developers of the go language. 
+SDKs for other languages are in the planning stage. 
+For other distributed transaction frameworks, as long as the appropriate distributed transaction information is provided, the technology can be quickly implemented using DTM according to the above principles.
+
+## Summary
+
+This article introduces some basic theory of distributed transactions and explains the commonly used distributed transaction schemes. 
+In the second half of the article, it also gives the causes of transaction exceptions, their classification and elegant solutions.
+
+Our [yedf/dtm](https://github.com/yedf/dtm) supports TCC, XA, SAGA, transactional messaging, and maximum effort notifications (implemented using transaction messages), with concise and easy-to-use access.
+
+Welcome to visit the [https://github.com/yedf/dtm](https://github.com/yedf/dtm) project and star for support!
