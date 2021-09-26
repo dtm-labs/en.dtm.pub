@@ -1,6 +1,6 @@
 # The seven most classic solutions for distributed transaction management
 
-With the rapid development of business and increasing business complexity, almost every company's system will move from the monolithic architecture to a distributed, especially microservice-based one. 
+With the rapid development of business and increasing business complexity, almost every company's system will move from the monolithic architecture to a distributed, especially microservice-based one.
 Naturally with this change comes the challenging difficulty of distributed transactions.
 In this blog, the seven most classic solutions for distributed transaction management have been summarized.
 
@@ -10,7 +10,7 @@ Before explaining the our DTM solution, let's review some basic theoretical know
 
 Let's take a money transfer as an example: A wants to transfer $100 to B.
 What needs to be done is thus to subtract $100 from A's balance and to add $100 to B's balance.
-The guarantee must be provided that the entire transfer, namely A-$100 and B+$100, either succeeds or fails atomically as a whole. 
+The guarantee must be provided that the entire transfer, namely A-$100 and B+$100, either succeeds or fails atomically as a whole.
 Let's see how this problem is solved in various scenarios.
 
 ### Transactions
@@ -18,7 +18,7 @@ Let's see how this problem is solved in various scenarios.
 The functionality to execute multiple statements as a whole is known as a database transaction.
 A database transaction ensures that all operations within the scope of that transaction either all succeed or all fail.
 
-Transactions have four properties: atomicity, consistency, isolation, and persistence. 
+Transactions have four properties: atomicity, consistency, isolation, and persistence.
 These four properties are commonly referred to as ACID characteristics.
 
 - Atomicity: All operations in a transaction either complete or do not complete, but never end at some point in the middle.
@@ -59,13 +59,13 @@ On the other hand, distributed transactions also partially follow the ACID speci
 
 ### Two-phase commit/XA
 
-XA is a specification for distributed transactions proposed by the X/Open organization. 
-The XA specification mainly defines the interface between a (global) Transaction Manager (TM) and a (local) Resource Manager (RM). 
+XA is a specification for distributed transactions proposed by the X/Open organization.
+The XA specification mainly defines the interface between a (global) Transaction Manager (TM) and a (local) Resource Manager (RM).
 Local databases such as mysql play the RM role in the XA specification.
 
 XA is divided into two phases.
 
- - Phase 1 (prepare): All participating RMs prepare to execute their transactions and lock the required resources. 
+ - Phase 1 (prepare): All participating RMs prepare to execute their transactions and lock the required resources.
    When the participants are ready, they report to TM that they are ready.
 
  - Phase 2 (commit/rollback): When the transaction manager (TM) confirms that all participants (RM) are ready, it sends a commit command to all participants.
@@ -88,7 +88,7 @@ If readers want to study XA further, refer to [DTM](https://github.com/yedf/dtm)
 
 # SAGA
 
-SAGA originally appeared in the paper [SAGAS](https://www.cs.cornell.edu/andru/cs711/2002fa/reading/sagas.pdf) published by Hector Garcia-Molina and Kenneth Salem in 1987. 
+SAGA originally appeared in the paper [SAGAS](https://www.cs.cornell.edu/andru/cs711/2002fa/reading/sagas.pdf) published by Hector Garcia-Molina and Kenneth Salem in 1987.
 The key idea is to write a long-lived transaction as multiple short local transactions, collectively termed as a SAGA and coordinated by the SAGA transaction coordinator.
 If all sub-transactions of a SAGA complete, the SAGA completes successfully.
 If one sub-transaction fails, the compensating transactions will be invoked one at a time in the reverse order.
@@ -143,11 +143,11 @@ The features of TCC are the following:
 - Consistency is better than SAGA, where intermediate state of balance deduction but transfer failure may occur
 - TCC is thus suitable for order-related business with constraints on intermediate state
 
-If readers want to study TCC further, refer to [DTM](https://github.com/yedf/dtm) for go, or [seata](https://github.com/seata/seata) for java language. 
+If readers want to study TCC further, refer to [DTM](https://github.com/yedf/dtm) for go, or [seata](https://github.com/seata/seata) for java language.
 
 ### Local Messaging
 
-The Local Messaging solution was originally published to ACM by ebay architect Dan Pritchett in 2008. 
+The Local Messaging solution was originally published to ACM by ebay architect Dan Pritchett in 2008.
 The key idea is to introduce a persistent message queue to execute tasks that require distributed processing in an asynchronous manner.
 
 The general flow is as follows:
@@ -206,7 +206,7 @@ Features of the Transactional Messaging model are the following:
 
 Suitable for operations that can be executed asynchronously and where subsequent operations do not need to be rolled back
 
-Refer to [rocketmq](https://github.com/apache/rocketmq) if you want to further study transaction messages. 
+Refer to [rocketmq](https://github.com/apache/rocketmq) if you want to further study transaction messages.
 Our [DTM](https://github.com/yedf/dtm) also provides a simple implementation to facilitate learning transaction messages.
 
 ### Best-effort Notification
@@ -214,10 +214,10 @@ Our [DTM](https://github.com/yedf/dtm) also provides a simple implementation to 
 The initiating notifier notifies the receiver of the result of the business processing with a certain mechanism of best effort.
 Specifically:
 
-- Notification of messages can be repeated. 
+- Notification of messages can be repeated.
   Because the receiving side may not receive the notification, there should be some mechanism to repeat the notification of the message.
 
-- Messages can be checked. 
+- Messages can be checked.
   If the receiver is not notified even after maximum efforts, or if the receiver consumes the message but wants to consume it again, the receiver should be allowed to actively query the message information from the initiating notifier.
 
 What is the difference between the Local Messaging and the Transactional Messaging models introduced earlier, which both produce reliable messages, and the Best-effort Notification model introduced here?
@@ -230,9 +230,9 @@ As a result, the receiving side needs to actively call the initiating notifier's
 
 A solution using the Best-effort Notification model should:
 
-- Provide an interface to allow the receiving side to actively query the results of the business processing 
+- Provide an interface to allow the receiving side to actively query the results of the business processing
 
-- Setup ACK mechanism of messaging, which means the notification interval is gradually increased with the interval of 1min, 5min, 10min, 30min, 1h, 2h, 5h, 10h, until it reaches the upper limit of the time window of notification requirements. 
+- Setup ACK mechanism of messaging, which means the notification interval is gradually increased with the interval of 1min, 5min, 10min, 30min, 1h, 2h, 5h, 10h, until it reaches the upper limit of the time window of notification requirements.
   No further notifications are made after that.
 
 Best-effort Notification is applicable to business notification scenarios.
@@ -319,7 +319,7 @@ The sub-transaction barrier technique provides the method ThroughBarrierCall, si
 func ThroughBarrierCall(db *sql.DB, transInfo *TransInfo, busiCall BusiFunc)
 ```
 
-Business developers write their specific business logic inside busiCall, and call ThroughBarrierCall with it. 
+Business developers write their specific business logic inside busiCall, and call ThroughBarrierCall with it.
 ThroughBarrierCall guarantees that busiCall will not be called in scenarios such as empty rollback, suspension, etc, and that, when the business service is called repeatedly, proper idempotent control ensures that it is committed only once.
 
 sub-transaction barrier recognizes and manages TCC, SAGA, XA,  transaction messages, etc., and can also be extended to other areas.
@@ -358,16 +358,16 @@ For SAGA and transaction messages, it is a similar mechanism.
 
 #### Summary for sub-transaction barrier
 
-Sub-transaction barrier technology, pioneered by [https://github.com/yedf/dtm](https://github.com/yedf/dtm), is significant in designing simple and easy-to-implement algorithms and providing easy-to-use interfaces. 
+Sub-transaction barrier technology, pioneered by [https://github.com/yedf/dtm](https://github.com/yedf/dtm), is significant in designing simple and easy-to-implement algorithms and providing easy-to-use interfaces.
 With the help of these two items, developers are completely freed from the handling of network exceptions.
 
-The technology currently requires the [yedf/dtm](https://github.com/yedf/dtm) transaction manager, and the SDK is currently available to developers of the go language. 
-SDKs for other languages are in the planning stage. 
+The technology currently requires the [yedf/dtm](https://github.com/yedf/dtm) transaction manager, and the SDK is currently available to developers of the go language.
+SDKs for other languages are in the planning stage.
 For other distributed transaction frameworks, as long as the appropriate distributed transaction information is provided, the technology can be quickly implemented using DTM according to the above principles.
 
 ## Summary
 
-This article introduces some basic theory of distributed transactions and explains the commonly used distributed transaction schemes. 
+This article introduces some basic theory of distributed transactions and explains the commonly used distributed transaction schemes.
 In the second half of the article, it also gives the causes of transaction exceptions, their classification and elegant solutions.
 
 Our [yedf/dtm](https://github.com/yedf/dtm) supports TCC, XA, SAGA, transactional messaging, and maximum effort notifications (implemented using transaction messages), with concise and easy-to-use access.
