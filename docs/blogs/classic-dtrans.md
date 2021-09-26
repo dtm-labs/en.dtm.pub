@@ -89,7 +89,7 @@ The features of XA transactions are
 - Simple to understand and easier to develop
 - Long locking of resources and low concurrency
 
-If readers want to study XA further, refer to [DTM](https://github.com/yedf/dtm) for go language, or [seata](https://github.com/seata/seata) for java language.
+If readers want to study XA further, refer to [DTM](https://github.com/yedf/dtm).
 
 # SAGA
 
@@ -114,7 +114,7 @@ There are more SAGA contents in the paper, including two recovery strategies, in
 
 SAGA is applicable to a wide range of scenarios, including long transactions and business scenarios that are not sensitive to intermediate results.
 
-If readers want to study SAGA further, refer to [DTM](https://github.com/yedf/dtm) for go language, or refer to [seata](https://github.com/seata/seata) for java language.
+If readers want to study SAGA further, refer to [DTM](https://github.com/yedf/dtm).
 
 ### TCC
 
@@ -148,7 +148,7 @@ The features of TCC are the following:
 - Consistency is better than SAGA, where intermediate state of balance deduction but transfer failure may occur
 - TCC is thus suitable for order-related business with constraints on intermediate state
 
-If readers want to study TCC further, refer to [DTM](https://github.com/yedf/dtm) for go, or [seata](https://github.com/seata/seata) for java language.
+If readers want to study TCC further, refer to [DTM](https://github.com/yedf/dtm).
 
 ### Local Messaging
 
@@ -212,7 +212,7 @@ Features of the Transactional Messaging model are the following:
 Suitable for operations that can be executed asynchronously and where subsequent operations do not need to be rolled back
 
 Refer to [rocketmq](https://github.com/apache/rocketmq) if you want to further study transaction messages.
-Our [DTM](https://github.com/yedf/dtm) also provides a simple implementation to facilitate learning transaction messages.
+Our [DTM](https://github.com/yedf/dtm) also provides a implementation.
 
 ### Best-effort Notification
 
@@ -366,7 +366,7 @@ For SAGA and transaction messages, it is a similar mechanism.
 Sub-transaction barrier technology, pioneered by [https://github.com/yedf/dtm](https://github.com/yedf/dtm), is significant in designing simple and easy-to-implement algorithms and providing easy-to-use interfaces.
 With the help of these two items, developers are completely freed from the handling of network exceptions.
 
-The technology currently requires the [yedf/dtm](https://github.com/yedf/dtm) transaction manager, and the SDK is currently available to developers of the go language.
+The technology currently requires the [yedf/dtm](https://github.com/yedf/dtm) transaction manager, and the SDK is currently available to developers of the go/python language.
 SDKs for other languages are in the planning stage.
 For other distributed transaction frameworks, as long as the appropriate distributed transaction information is provided, the technology can be quickly implemented using DTM according to the above principles.
 
