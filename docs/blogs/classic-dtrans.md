@@ -2,7 +2,8 @@
 
 With the rapid development of business and increasing business complexity, almost every company's system will move from the monolithic architecture to a distributed, especially microservice-based one.
 Naturally with this change comes the challenging difficulty of distributed transactions.
-In this blog, the seven most classic solutions for distributed transaction management have been summarized.
+
+This article first introduces the relevant basic theories, then summarizes the most classic transaction solutions, and finally figures out elegant solutions to the out-of-order execution of sub-transactions (idempotence, null compensation, suspension problems).
 
 ## Basic theory
 
@@ -32,6 +33,8 @@ These four properties are commonly referred to as ACID characteristics.
 
 - Persistence: After the transaction is finished, the modification of the data is permanent and will not be lost even if the system fails.
 
+If our business system is simple and the transfer can be accomplished in only one service and also in only one database, then we can take the solution of database transactions.
+
 ### Distributed transactions
 
 A typical distributed transaction scenario is the inter-bank money transfer.
@@ -56,6 +59,8 @@ On the other hand, distributed transactions also partially follow the ACID speci
 - Persistence: Strictly followed
 
 ## Solutions for distributed transaction management
+
+For distributed transaction, there is no perfect solution for all business problems, because the complete ACID guarantees cannot be achieved. Therefore, in actual applications, we should choose the most suitable distributed transaction solution according to the different characteristics of the business.
 
 ### Two-phase commit/XA
 
