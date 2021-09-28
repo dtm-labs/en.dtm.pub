@@ -12,6 +12,24 @@ select * from dtm.trans_global where status not in ('succeed', 'failed') and
   create_time between date_add(now(), interval -3600 second) and date_add(now(), interval -120 second)
 ```
 
+The Project supports monitoring and alerting by Prometheus after v1.1.0.
+The exporting port for Prometheus is `8889`, which can be found in `dtmsvr/dtmsvr.go`.
+This monitoring interface provides the availability and response times of the network interface (HTTP/gRPC) 
+and the status of executing transactions and branches.
+
+Specifically, the metrics include follow:
+
+- `dtm_server_process_total`
+- `dtm_server_response_duration`
+- `dtm_transaction_process_total`
+- `dtm_branch_process_total`
+
+For example, a possible alert for monitoring the failures of the `confirm/cancel` type branch: 
+
+```
+sum(dtm_branch_process_total{branchtype=~"confirm|cancel",status="fail"}) by (gid, branchid) > 3
+```
+
 ## Trigger global transaction to retry immediately
 
 dtm polls the database for outstanding global transactions which timed out within the last hour. 
