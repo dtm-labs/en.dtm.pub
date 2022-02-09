@@ -59,13 +59,19 @@ This tutorial assumes that you already have basic knowledge of distributed trans
 This tutorial also assumes that you have some basic programming knowledge and can understand GO code in general. If you are not familiar with this, you can visit [golang](https://golang.google.cn/).
 :::
 
-- [install](./install) use the golang idiomatic way
+### run dtm
 
-The easiest way to try DTM is to run the QuickStart example, the main file of which is at [dtm/example/quick_start.go](https://github.com/yedf/dtm/blob/main/examples/quick_start.go).
+``` bash
+git clone https://github.com/dtm-labs/dtm && cd dtm
+go run main.go
+```
 
-You can run the example in the dtm directory with the following command
+### Start the example
 
-`go run app/main.go quick_start`
+``` bash
+git clone https://github.com/dtm-labs/dtmcli-go-sample && cd dtmcli-go-sample
+go run main.go
+```
 
 In this example, a saga distributed transaction is created and then committed to dtm, with key code shown below:
 
@@ -79,36 +85,6 @@ In this example, a saga distributed transaction is created and then committed to
 		Add(qsBusi+"/TransIn", qsBusi+"/TransInCompensate", req)
 	// submit the created saga transaction，dtm ensures all subtractions either complete or get revoked
 	err := saga.Submit()
-```
-
-This distributed transaction demo simulates a scenario in a distributed transaction for cross-bank transfers.
-The master transaction is comprised of two sub-transactions, TransOut (transfer money out from source account) and TransIn (transfer money into destination account), both consisting of forward operations and reverse compensation, defined as follows:
-
-``` go
-func qsAdjustBalance(uid int, amount int) (interface{}, error) {
-	err := dbGet().Transaction(func(tx *gorm.DB) error {
-		return tx.Model(&UserAccount{}).Where("user_id = ?", uid).Update("balance", gorm.Expr("balance + ?", amount)).Error
-	})
-	if err != nil {
-		return nil, err
-	}
-	return M{"dtm_result": "SUCCESS"}, nil
-}
-
-func qsAddRoute(app *gin.Engine) {
-	app.POST(qsBusiAPI+"/TransIn", common.WrapHandler(func(c *gin.Context) (interface{}, error) {
-		return qsAdjustBalance(2, 30)
-	}))
-	app.POST(qsBusiAPI+"/TransInCompensate", common.WrapHandler(func(c *gin.Context) (interface{}, error) {
-		return qsAdjustBalance(2, -30)
-	}))
-	app.POST(qsBusiAPI+"/TransOut", common.WrapHandler(func(c *gin.Context) (interface{}, error) {
-		return qsAdjustBalance(1, -30)
-	}))
-	app.POST(qsBusiAPI+"/TransOutCompensate", common.WrapHandler(func(c *gin.Context) (interface{}, error) {
-		return qsAdjustBalance(1, 30)
-	}))
-}
 ```
 
 The entire transaction completes successfully eventually with the following timing diagram:

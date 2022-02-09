@@ -1,9 +1,9 @@
 # The seven most classic solutions for distributed transaction management
 
-With the rapid development of business and increasing business complexity, almost every company's system will move from the monolithic architecture to a distributed, especially microservice-based one.
+With the rapid development of business and increasing business complexity, almost every company's system will move from the monolithic architecture to a distributed, especially micro-services based one.
 Naturally with this change comes the challenging difficulty of distributed transactions.
 
-This article first introduces the relevant basic theories, then summarizes the most classic transaction solutions, and finally figures out elegant solutions to the out-of-order execution of sub-transactions (idempotence, null compensation, suspension problems).
+This article first introduces the relevant basic theories, then summarizes the most classic transaction solutions, and finally figures out elegant solutions to the out-of-order execution of sub-transactions (idempotency, null compensation, suspension problems).
 
 ## Basic theory
 
@@ -184,7 +184,7 @@ The Local Messaging model is suitable for asynchronous tasks that need no rollba
 
 In the local messaging solution described above, the producer is responsible for creating and polling the local message table, leading to severe burden.
 RocketMQ opensourced by alibaba supports Transactional Messaging starting from v4.3 version.
-What RocketMQ essentially does is to deligate the local message table to RocketMQ, to achieve the atomicity on the producer's side to send message and execute local transaction.
+What RocketMQ essentially does is to delegate the local message table to RocketMQ, to achieve the atomicity on the producer's side to send message and execute local transaction.
 
 Transactional Messaging model:
 
