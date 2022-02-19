@@ -2,8 +2,9 @@
 
 ## What is DTM
 
-DTM is the first distributed transaction management framework in golang.
-Unlike other frameworks, DTM provides extremely easy access to HTTP and gRPC, supports multiple language bindings, and handles tricky problems of unordered sub-transactions at the framework level.
+DTM is a distributed transaction solution which provides cross-service eventually data consistency. It provides saga, tcc, xa, 2-phase message strategies for a variety of application scenarios. It also supports multiple languages and multiple store engine to form up a transaction as following picture:
+
+![function](../imgs/function.png)
 
 Learn more behind the design of DTM in [why choose DTM](./why).
 
