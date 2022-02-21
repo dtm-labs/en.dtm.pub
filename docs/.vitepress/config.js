@@ -29,19 +29,7 @@ module.exports = {
       '/blogs/': [
         {
           text: 'The seven classic solutions for distributed transanction management',
-          link: '/blogs/classic-dtrans',
-        },
-        {
-          text: 'Choose the right distributed transanction management solution',
-          link: '/blogs/choose-dtrans',
-        },
-        {
-          text: 'SAGA distributed transanction model in Go',
-          link: '/blogs/go-saga',
-        },
-        {
-          text: 'TCC distributed transanction model in Go',
-          link: '/blogs/go-tcc',
+          link: 'https://medium.com/@dongfuye/the-seven-most-classic-solutions-for-distributed-transaction-management-3f915f331e15',
         },
       ],
       '/examples/': 'auto',
@@ -50,10 +38,6 @@ module.exports = {
         {
           text: 'Fundations',
           children: [
-            {
-              text: 'Distributed transanction management theory',
-              link: '/guide/theory'
-            },
             {
               text: 'Installation',
               link: '/guide/install'
@@ -69,32 +53,23 @@ module.exports = {
           ]
         },
         {
-          text: 'Overview',
+          text: 'Theory & Practice',
           children: [
+            {
+              text: 'Theory',
+              link: '/practice/theory'
+            },
             {
               text: 'Architecture',
-              link: '/summary/arch'
+              link: '/practice/arch'
             },
-            {
-              text: 'Protocols',
-              link: '/summary/protocol'
-            },
-            {
-              text: 'Databases',
-              link: '/summary/db'
-            },
-            {
-              text: 'Source code',
-              link: '/summary/code'
-            },
-          ]
-        },
-        {
-          text: 'Practice',
-          children: [
             {
               text: 'SAGA',
               link: '/practice/saga'
+            },
+            {
+              text: '2-phase MSG',
+              link: '/practice/msg'
             },
             {
               text: 'TCC',
@@ -105,64 +80,117 @@ module.exports = {
               link: '/practice/xa'
             },
             {
-              text: 'Transanctional Messaging',
-              link: '/practice/msg'
-            },
-            {
-              text: 'Others',
+              text: 'Other',
               link: '/practice/other'
             },
             {
-              text: 'Wait for results',
-              link: '/practice/wait'
+              text: 'Exception & Solution',
+              link: '/practice/barrier'
             },
             {
-              text: 'Choose the right transanction model',
+              text: 'Must Succeed',
+              link: '/practice/must-succeed'
+            },
+            {
+              text: 'Choose the right solution',
               link: '/practice/choice'
-            }
+            },
           ]
         },
         {
-          text: 'Exception handling',
+          text: 'Application',
           children: [
             {
-              text: 'Exceptions',
-              link: '/exception/exception'
+              text: 'Introduction',
+              link: '/app/intro'
             },
             {
-              text: 'Subtransanction barrier',
-              link: '/exception/barrier'
-            }
+              text: 'Order',
+              link: '/app/order'
+            },
+            {
+              text: 'Flash Sale',
+              link: '/app/flash'
+            },
+            {
+              text: 'Cache Consistency',
+              link: '/app/cache'
+            },
           ]
         },
         {
-          text: 'Deployment and maintenance',
+          text: 'Access DTM',
           children: [
             {
-              text: 'Basics',
+              text: 'SDK',
+              link: '/ref/sdk'
+            },
+            {
+              text: 'Transaction Options',
+              link: '/ref/options'
+            },
+            {
+              text: 'Storage',
+              link: '/ref/store'
+            },
+            {
+              text: 'Supported Protocols',
+              link: '/ref/proto'
+            },
+            {
+              text: 'More Features',
+              link: '/ref/feature'
+            },
+            {
+              text: 'HTTP Reference',
+              link: '/ref/http'
+            },
+            {
+              text: 'Projects',
+              link: '/ref/prejects'
+            },
+            {
+              text: 'Go-zero Access',
+              link: '/ref/go-zero'
+            },
+          ]
+        },
+        {
+          text: 'Deployment',
+          children: [
+            {
+              text: 'Base',
               link: '/deploy/base'
             },
             {
-              text: 'Docker deployment',
-              link: '/deploy/docker'
-            },
-            {
-              text: 'Online deployment',
-              link: '/deploy/online'
-            },
-            {
-              text: 'Direct deployment',
-              link: '/deploy/direct'
+              text: 'Deploy',
+              link: '/deploy/deploy'
             },
             {
               text: 'Maintenance',
               link: '/deploy/maintain'
-            }
+            },
+            {
+              text: 'Upgrade',
+              link: '/deploy/upgrade'
+            },
           ]
         },
         {
           text: 'Miscellaneous',
           children: [
+            {
+              text: 'How to develop',
+              link: '/other/develop'
+            },
+            {
+              text: 'Performance of Mysql Engine',
+              link: '/other/mysql'
+            },
+            {
+              text: 'Performance of Redis Engine',
+              link: '/other/redis'
+            },
             {
               text: 'Alternatives',
               link: '/other/opensource'
@@ -170,7 +198,7 @@ module.exports = {
             {
               text: 'Who uses DTM',
               link: '/other/using'
-            }
+            },
           ]
         },
       ]
