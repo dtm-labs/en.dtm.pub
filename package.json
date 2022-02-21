@@ -1,7 +1,7 @@
 {
   "name": "dtm-doc",
   "version": "0.0.1",
-  "repository": "git@github.com:yedf/yedf.github.io.git",
+  "repository": "git@github.com:dtm-labs/en.dtm.pub.git",
   "author": "yedf",
   "license": "MIT",
   "scripts": {
@@ -12,7 +12,7 @@
     "prepare": "husky install"
   },
   "devDependencies": {
-    "husky": "^7.0.1",
-    "vitepress": "^0.15.6"
+    "husky": "^7.0.0",
+    "vitepress": "^0.21.6"
   }
 }
