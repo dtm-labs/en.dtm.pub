@@ -20,7 +20,7 @@ dtm
 This way of installation is very friendly for developers who would like to study dtm in depth using go language.
 It is easy for developers to run all the examples, and debug and trace the running of all the code.
 
-### Preparation
+#### Preparation
 
 First you need to [install go 1.15+](https://golang.google.cn/)
 
@@ -31,7 +31,7 @@ git clone https://github.com/dtm-labs/dtm
 cd dtm
 ```
 
-### start
+#### start
 
 You can start dtm server by following command:
 

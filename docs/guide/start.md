@@ -52,7 +52,7 @@ Invited speaker at the China Database Conference. [Distributed Transaction Pract
     font-weight: 600;
 " href="../other/opensource">Comparison to Seata</a>
 
-## start
+## Quick start
 
 ::: tip Basics to have
 This tutorial assumes that you already have basic knowledge of distributed transactions. If you are not familiar with this, first read [Theory of Distributed Transactions](../guide/theory).
@@ -60,14 +60,14 @@ This tutorial assumes that you already have basic knowledge of distributed trans
 This tutorial also assumes that you have some basic programming knowledge and can understand GO code in general. If you are not familiar with this, you can visit [golang](https://golang.google.cn/).
 :::
 
-### run dtm
+#### run dtm
 
 ``` bash
 git clone https://github.com/dtm-labs/dtm && cd dtm
 go run main.go
 ```
 
-### Start the example
+#### Start the example
 
 ``` bash
 git clone https://github.com/dtm-labs/dtmcli-go-sample && cd dtmcli-go-sample
@@ -115,5 +115,4 @@ We have just briefly described a complete distributed transaction, including a s
 Now that you should have a concrete understanding of distributed transactions in DTM, keep learning this tutorial to learn step-by-step the technical solutions and techniques for handling distributed transactions.
 
 ## Slack
-
 You can join the [DTM slack channel here](https://join.slack.com/t/dtm-w6k9662/shared_invite/zt-vkrph4k1-eFqEFnMkbmlXqfUo5GWHWw)
