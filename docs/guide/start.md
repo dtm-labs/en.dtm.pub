@@ -97,9 +97,10 @@ For example, the destination sub-account is freezed, causing the transfer to fai
 Let's modify the business code to purposely fail the forward operation of TransIn and watch what happens.
 
 ``` go
-	app.POST(qsBusiAPI+"/TransIn", common.WrapHandler(func(c *gin.Context) (interface{}, error) {
-		return M{"dtm_result": "FAILURE"}, nil
-	}))
+	app.POST(qsBusiAPI+"/TransIn", func(c *gin.Context) {
+		c.JSON(409, "") // Status 409 for Failure. Won't be retried
+	})
+
 ```
 
 Running the example again, the whole transaction eventually fails with the following timing diagram:
@@ -116,7 +117,3 @@ Now that you should have a concrete understanding of distributed transactions in
 ## Slack
 
 You can join the [DTM slack channel here](https://join.slack.com/t/dtm-w6k9662/shared_invite/zt-vkrph4k1-eFqEFnMkbmlXqfUo5GWHWw)
-
-## Give a Star! ⭐
-
-If you think this project is good, or helpful to you, please give a star!
