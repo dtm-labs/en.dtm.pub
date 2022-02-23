@@ -1,6 +1,6 @@
 module.exports = {
   title: 'DTM tutorial',
-  description: 'Distributed transaction management in Go',
+  description: 'A Distributed transaction framework in Go',
   lang: 'en-US',
   head: [
     ['link', { rel: 'icon', type: 'image/svg', href: '/dtm.svg' }],
@@ -22,7 +22,7 @@ module.exports = {
       { text: '中文', link: 'https://dtm.pub' },
       { text: 'Blog', link: '/blogs/classic-dtrans' },
       // { text: '示例', link: '/examples/' },
-      { text: 'Github', link: 'https://github.com/yedf/dtm' },
+      { text: 'Github', link: 'https://github.com/dtm-labs/dtm' },
       { text: 'zhihu', link: 'https://www.zhihu.com/people/ye-dongfu' }
     ],
     sidebar: {

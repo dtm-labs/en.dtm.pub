@@ -6,7 +6,7 @@ actionLink: /guide/start
 
 features:
   - title: 💡 Extremely easy to adopt
-    details: Support HTTP and GRPC, provide easy-to-use interfaces, lower substantially the barrier of getting started with distributed transactions, newcomers can adopt quickly 
+    details: Support HTTP and GRPC, provide easy-to-use interfaces, lower substantially the barrier of getting started with distributed transactions, newcomers can adopt quickly
   - title: ⚡️ Easy to use
     details: Developers no longer worry about suspension, null compensation, idempotent transaction and other tricky problems, the framework layer handles them all
   - title: 🛠️ Multi-language support
@@ -15,5 +15,5 @@ features:
     details: Only external dependence is database server, easy to deploy, cluster, and scale horizontally
   - title: 🔩 Multiple distributed transaction protocols
     details: Support TCC, SAGA, XA, transaction messages
-footer: BSD-2 Licensed
+footer: BSD-3 Licensed
 ---
