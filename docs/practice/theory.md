@@ -32,7 +32,7 @@ These four properties are commonly referred to as ACID characteristics.
 A distributed system can only satisfy at most two of the three criteria of Consistency, Availability, and Partition tolerance at the same time.
 This is called CAP theory and has been proven.
 
-### C Consistency
+#### C Consistency
 
 In distributed systems, data is usually stored in copies on different nodes.
 If an update operation has been successfully executed on the data on the first node, but the data on the second node is not yet updated accordingly, then the data read from the second node will be the data before the update, i.e., dirty data, which is the case of data inconsistency in distributed systems.
@@ -42,13 +42,13 @@ In a distributed system, if it is possible to achieve that all users can read th
 Please note that the consistency in CAP and the consistency in ACID, although with the same wording, have different meanings in practice.
 Please pay attention to the differences.
 
-### A Availability
+#### A Availability
 
 Availability means whether the cluster as a whole can still respond to client read and write requests after a failure of some of the nodes in the cluster. (High availability for data updates)
 
 In modern Internet applications, it is unacceptable if the service is unavailable for a long time due to problems such as server downtime.
 
-### P Partitioning tolerance
+#### P Partitioning tolerance
 
 In practical terms, partitioning is equivalent to a time limit on communication.
 If a system cannot achieve data consistency within the time limit, partitioning occurs and a choice must be made between Consistency and Availability concerning the current operation.
