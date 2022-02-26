@@ -144,7 +144,8 @@ So how do 2-phase messaging distinguish between in-progress and rolled back mess
 2-phase messages can replace not only the local message table scheme, but also the normal message scheme. If you call Submit directly, then it is similar to the normal message scheme, but provides a more flexible and simple interface.
 
 Suppose an application scenario where there is a button on the interface to participate in an event that grants permanent access to two eBooks. In this case, the server side of this button can be handled like this again.
-```
+
+``` go
 msg := dtmcli.NewMsg(DtmServer, gid).
 	Add(busi.Busi+"/AuthBook", &Req{UID: 1, BookID: 5}).
 	Add(busi.Busi+"/AuthBook", &Req{UID: 1, BookID: 6})
