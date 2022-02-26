@@ -91,7 +91,7 @@ The timing diagram for failure is as follows:
 
 ## Confirm/Cancel failure
 
-What happens if a Confirm/Cancel operation fails? According to the protocol of Tcc mode, Confirm/Cancel operation is not allowed to fail, and any failure is due to temporary failure or program bugs. dtm will keep retrying until success when Confirm/Cancel operation fails.
+What happens if a Confirm/Cancel operation fails? According to the protocol of Tcc mode, Confirm/Cancel operation is require to be eventually successful, and any failure is due to temporary failure or program bugs. dtm will keep retrying until success when Confirm/Cancel operation fails.
 
 In order to avoid program bugs that cause compensation operations to fail all the time, it is recommended that developers monitor the global transaction table, find out transactions with more than 3 retries, issue alarms, and push developers to handle them manually, see [dtm's O&M](...) /deploy/maintain)
 
