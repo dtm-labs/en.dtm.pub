@@ -2,13 +2,13 @@
 
 ## What is XA
 
-XA is a specification for distributed transactions proposed by the X/Open organization. 
-The XA specification mainly defines the interface between a (global) Transaction Manager (TM) and a (local) Resource Manager (RM). 
+XA is a specification for distributed transactions proposed by the X/Open organization.
+The XA specification mainly defines the interface between a (global) Transaction Manager (TM) and a (local) Resource Manager (RM).
 Local databases such as mysql play the RM role in the XA specification.
 
 XA is divided into two phases.
 
- - Phase 1 (prepare): All participating RMs prepare to execute their transactions and lock the required resources. 
+ - Phase 1 (prepare): All participating RMs prepare to execute their transactions and lock the required resources.
    When the participants are ready, they report to TM that they are ready.
 
  - Phase 2 (commit/rollback): When the transaction manager (TM) confirms that all participants (RM) are ready, it sends a commit command to all participants.
@@ -30,7 +30,7 @@ xa commit '4fPqCNTYeSG'
 
 ## XA hands-on
 
-Let's complete a full XA. 
+Let's complete a full XA.
 Let's start with a successful XA timing diagram:
 
 ![xa_normal](../imgs/xa_normal.jpg)
@@ -38,7 +38,7 @@ Let's start with a successful XA timing diagram:
 Since the XA pattern requires the use of local database functions, we cannot reuse the previous generic processing functions.
 The whole amount of code will be a bit more complex than the simplest examples of several other patterns.
 
-### http
+#### http
 
 ``` go
 // XaSetup mounts the http api and creates XaClient
@@ -89,7 +89,7 @@ func xaTransOut(c *gin.Context) (interface{}, error) {
 }
 ```
 
-### grpc
+#### grpc
 
 ``` go
 	XaGrpcClient = dtmgrpc.NewXaGrpcClient(DtmGrpcServer, config.DB, BusiGrpc+"/examples.Busi/XaNotify")
@@ -136,15 +136,15 @@ func (s *busiServer) TransOutXa(ctx context.Context, in *dtmgrpc.BusiRequest) (*
 
 ```
 
-The above code first registers a global XA transaction, then adds two sub-transactions TransOut, TransIn. 
-After all the sub-transactions are executed successfully, the global XA transaction is committed to DTM. 
+The above code first registers a global XA transaction, then adds two sub-transactions TransOut, TransIn.
+After all the sub-transactions are executed successfully, the global XA transaction is committed to DTM.
 DTM receives the committed xa global transaction, and calls the xa commit of all the sub-transactions to complete the whole xa transaction.
 
-### Rollback upon failure
+## Rollback upon failure
 
 If a prepare phase operation fails, DTM will call xa rollback of each child transaction to roll back, and the transaction is successfully rolled back at last.
 
-Let's pass TransInResult=FAILURE in the request load of XaFireRequest to fail purposely. 
+Let's pass TransInResult=FAILURE in the request load of XaFireRequest to fail purposely.
 
 ``` go
 req := &examples.TransReq{Amount: 30, TransInResult: "FAILURE"}

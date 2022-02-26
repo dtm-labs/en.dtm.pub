@@ -25,7 +25,7 @@ A typical timing diagram for a successfully completed transaction using the TCC 
 
 Let's complete one of the simplest TCC:
 
-### http
+#### http
 ``` go
 err := dtmcli.TccGlobalTransaction(DtmServer, gid, func(tcc *dtmcli.Tcc) (*resty.Response, error) {
   resp, err := tcc.CallBranch(&TransReq{Amount: 30}, Busi+"/TransOut", Busi+"/TransOutConfirm", Busi+"/TransOutRevert")
@@ -36,7 +36,7 @@ err := dtmcli.TccGlobalTransaction(DtmServer, gid, func(tcc *dtmcli.Tcc) (*resty
 })
 ```
 
-### grpc
+#### grpc
 ``` go
 gid := dtmgrpc.MustGenGid(DtmGrpcServer)
 err := dtmgrpc.TccGlobalTransaction(DtmGrpcServer, gid, func(tcc *dtmgrpc.TccGrpc) error {
@@ -74,7 +74,7 @@ When tccFunc returns normally, TccGlobalTransaction commits the global transacti
 DTM receives the request to commit, and calls the functions for the Confirm phase that are registered for all TCC workflows.
 When tccGlobalTransaction returns, all functions for the Try phase have completed, but those for the Confirm phase are usually not yet completed.
 
-### Rollback upon failure
+#### Rollback upon failure
 
 If tccFunc returns an error, TccGlobalTransaction terminates the global transaction and returns to the caller.
 DTM receives the request to terminate, and calls the functions for the Cancel phase that are registered for all TCC workflows.
@@ -109,7 +109,7 @@ The above requirement cannot be solved in SAGA, but it can be solved by TCC with
 
 In this case, if end-user A's balance is deducted, B will always receive the funds later.
 
-### Why only for short transactions
+#### Why only for short transactions
 
 TCC's transaction orchestration is placed on the application side, including, how many branches the transaction contains in total, what is the order of each branch. These information will not be sent to the dtm server as in SAGA. When the application crashes or quits and the orchestration information is lost, there is no way to retry the whole global transaction forward, only to roll back. If the global transaction takes a long time, say a minute or more, then when the application does a normal release upgrade, it will also cause the global transaction to roll back and affect the business. Therefore TCC would be more suitable for short transactions.
 
