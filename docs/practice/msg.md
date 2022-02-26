@@ -60,7 +60,7 @@ This lookup function goes inside the table and queries whether the local transac
 - **In progress:** This checkback will wait for the final result and then process as the previous committed/rollbacked case
 - **Not Started:** This checkback will insert data to ensure that the local transaction eventually fails
 
-## Pre-commit downtime flow
+## Crash before commit
 Let's take a look at the timing diagram of a local transaction being rolled back.
 ![msg_rollback](../imgs/msg_rollback.svg)
 
@@ -75,7 +75,7 @@ Using the new architecture to handle consistency issues requires only.
 
 Then we look at the other scenarios
 
-## 2-phase messages vs. local message tables
+## VS local message tables
 
 The above problem can also use the local message table solution (for details of the solution, refer to [The Seven Most Classic Solutions to Distributed Transactions](https://medium.com/@dongfuye/the-seven-most-classic-solutions-for-distributed-transaction-management-3f915f331e15)) to ensure the eventual consistency of the data. If a local message table is used, the work required includes
 - Executing the local business logic in the local transaction, inserting the messages into the message table and committing them last
@@ -87,7 +87,7 @@ Comparing the two, 2-phase messaging has the following advantages.
 - No polling tasks to handle
 - No need to consume messages
 
-## 2-phase vs. transactional messaging
+## VS transactional messaging
 
 The above problem can also be solved using RocketMQ's transactional messaging solution (see [The Seven Most Classic Solutions to Distributed Transactions](https://medium.com/@dongfuye/the-seven-most-classic-solutions-for-distributed-transaction-management-3f915f331e15) for more details on the solution) to ensure the eventual consistency of data. If transactional messaging is used, the work required includes.
 - opening a local transaction, sending a half-message, committing the transaction, and sending a commit message
@@ -119,7 +119,7 @@ For more information about synchronous mode, please refer to [transaction option
 
 Example of using redis, Mongo storage engine in combination with 2-phase messages can be found in [dtm-examples](https://github.com/dtm-labs/dtm-examples)
 
-## Backcheck principle dissection
+## Backcheck principle
 The checkback service appears in the previous timing diagram, as well as in the interface. In the 2-phase messages, it is handled automatically by copy-and-paste code, while in RocketMQ's transaction messages, it is handled manually. So what is the principle of automatic processing?
 
 To perform a checkback, we first create a separate table in the business database instance where the gid(global transaction id) is stored. gid is written to this table when the business transaction is processed.
