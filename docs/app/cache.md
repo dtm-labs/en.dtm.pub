@@ -90,3 +90,124 @@ Advantages of this solution:
 - dtm itself is a stateless common application, relying on the storage engine redis/mysql which is a common infrastructure, without maintaining additional message queues or canal
 - The related operations are modular and easy to maintain, no need to write consumer logic elsewhere like message queues or canal
 
+## Update or delete cache?
+When data changes, you can choose to update the cache or delete it, each with its own advantages and disadvantages. We try to analyze their advantages and disadvantages and propose a new approach below.
+
+#### Delete cache
+If we adopt the delete cache strategy and then generate cache on demand when querying, then in the case of high concurrency, if a hot data is deleted, then a large number of requests will fail to hit the cache at that time.
+
+To prevent too many query going to DB, a common practice is to use distributed Redis locks to ensure that only one request goes to the database, and then the other requests share the result after the cache is generated. This solution can be suitable for many scenarios, but some scenarios are not. For example, if there is an important hot data, and the computation cost is relatively high and it takes 3s to get the result, then the above solution will have a large number of requests last for 3s to return the result at this moment after removing one such hot data. This may cause a large number of requests to time out on the one hand, and on the other hand, 3s does not release the link, which will lead to a sudden increase in the number of concurrent connections and may cause system instability.
+
+In addition, when using Redis locks, the part of users who have not obtained the lock will usually poll the lock regularly, and this sleep time is not well set. If you set a relatively large sleep time of 1s, it is too slow to return cached data with results calculated in 200ms; if you set a sleep time that is too short, it consumes too much CPU and Network resources.
+
+#### Update Cache
+If we adopt the update cache strategy, the problem is that the cache is regenerated for each data modification, and there is no distinction between hot and cold data, which wastes the associated storage and computational resources.
+
+#### Delayed deletion
+So is there a best-of-both-worlds solution? One that doesn't waste storage and compute resources, but also solves the cache-breakdown problem? Yes, there is! The deferred-delete method. The deferred-delete method works as follows.
+1. when the data changes, look for the data in Redis, if the data does not exist, do nothing; if the data exists, then mark the data as deleted and set the expiration time of the data to 10s.
+2. When reading data from the cache, if the data is found to be marked as deleted or the lock has expired, then mark the data as locked until now+4s, then go to the database and read the data, then write it to the cache and clear the mark.
+3. When reading data from the cache, if the data is found to be marked as locked, then return the old data, and if there is no old data, then sleep 1s and try again
+
+This delayed deletion method has the following advantages.
+1. cold data does not take up a lot of storage and computing resources, only the requested data will generate cache and take up storage space
+2. the above-mentioned cache breakdown does not occur. When the hot data cache is updated, the old data will be returned when the cached data is calculated in these 3s, avoiding situations such as request timeouts
+
+Let's see if there are any problems with the delayed deletion method in various cases.
+1. Hot data, 1K qps, calculation of the cache costs 5ms: For this case, the delayed deletion method update the DB first, calculate the cach for 5ms, and then update the cache. That is in about 5ms, will return the expired data.
+2. Hot data, 1K qps, calculation of the cache costs 3s; For this case, the delayed deletion method update the DB first, calculate the cach for 3s, and then update the cache. That is in about 3s, will return the expired data.
+3. Normal data, 0.2 qps, calculation of the cache costs 3s; Similar to 2
+4. Code data, 10 minutes to access once: Delayed deletion method will not keep the data in cache for long.
+
+There is an extreme case, that is, there is no data in the original cache, and suddenly a large number of requests arrive. This scenario is not friendly to any caching strategy. Such scenarios are to be avoided by developers and need to be solved by warming up, rather than being handled at the caching system.
+
+Delayed deletion can handle all kinds of situations in the cache very well, the principle is slightly more complicated to write and needs to be implemented through lua scripts, but the advantage is that it can be implemented as a sdk, fully reused and does not need to be done by every developer. You can see examples in [dtm-cases/cache](https://github.com/dtm-labs/dtm-cases/tree/main/cache)
+
+## Inconsistency generated by disorder
+The inconsistency described earlier is mainly caused by the inability to update the database and update the cache at the same time, and the window of inconsistency is the time difference between the two updates. But there is another kind of data inconsistency, which has a lower probability of occurrence. Here we take a look at the timing diagram for this case.
+
+![cache-version](../imgs/cache-version.svg)
+
+In the above timing diagram, since Service 1 has a process suspension (e.g. due to GC), when it writes v1 to the cache, it overwrites v2 in the cache, resulting in an inconsistency (v2 in DB, v1 in cache).
+
+How to solve this kind of problem? In fact, this kind of problem is a version-related problem, and the recommended solution is to use a version control similar to optimistic locking. We have implemented a cache deferred deletion scheme that can solve this problem perfectly. The solution principle is as follows.
+
+The data in the cache has the following fields.
+- Empty
+- Data lock time: when a process wants to update the cache, then lock the cache for a short time, then query the DB, and then update the cache
+- Data locker uuid
+- Deleted
+
+When querying the cache.
+1. If the cache data is not locked, and the data is empty or marked as deleted
+  a. Lock the data for n seconds, the locker is the requested uuid
+  b. Get the data from the database
+  c. Determine if the locker of the data is the current request uuid, if yes, update the cache; if no, do not update the cache
+2. If the data in the cache is locked and the data is empty
+  a. sleep 1s and re-query the cache
+3. other data cases
+  a. Return the data in the cache directly (regardless of whether the data has been marked for deletion)
+
+When DB data is updated, deferred deletion of cache is guaranteed by dtm
+- In deferred delete, mark the data as deferred deleted and clear the data lock time and clear the locker uuid
+
+Under the above policy.
+
+If the last version written to the database is Vi, the last version written to the cache is V, and the uuid written to V is uuidv, then the following sequence of events must exist.
+
+database write Vi -> cached data is marked as deleted -> some query locks data and set uuidv -> query database result V -> locker in cache is uuidv, write result V
+
+In this sequence, V occurs after writing Vi, so V equals Vi, ensuring the evetual consistency of the cached data
+
+## Strong Consistency for APP?
+The various scenarios for cache consistency have been described above, along with related solutions, so is it possible to guarantee the use of caching while still providing strongly consistent data reads and writes?
+
+When we discuss strong consistency here, we need to first make the meaning of consistency clear.
+
+A developer's intuitive understanding of strong consistency is likely to be that the database and cache are identical, and that the latest writes are available during and after the write, whether read directly from the database or directly from the cache. For this kind of "strong consistency", we can say very clearly that it is theoretically impossible, because updating the database and updating the cache are on different machines and cannot be done at the same time, and there will be a time interval anyway, in which there must be inconsistency.
+
+But strong consistency in the application layer is possible. One can simply consider familiar scenarios: CPU cache for memory, memory cache for disk, these are caching scenarios where no consistency problem ever occurs. Why? It's actually quite simple: all data users are required to to read data from the cache only, not from both the cache and the underlying storage at the same time.
+
+For DB and Redis, as long as we require all data reads to go through the cache, then it is strongly consistent and no inconsistency will occur. Let's analyze the design of DB and Redis based on their characteristics.
+
+#### Update cache or DB first
+Analogous to CPU cache and memory cache, both systems modify the cache before modifying the underlying storage, so when it comes to the current DB caching scenario does it also modify the cache before modifying the DB?
+
+In the vast majority of application scenarios, developers will consider Redis as a cache, and when Redis fails, then the application needs to support degradation processing and still be able to access the database and provide certain service capabilities. Considering this scenario, once the downgrade occurs, writing to the cache before writing to the DB is problematic, as it will read to the new version v2 and then read to the old version v1. Therefore, in the Redis as cache scenario, most systems will adopt the design of writing to the DB before writing to the cache
+
+#### Write DB success cache failure scenario
+What if the process crashes after the write to the DB succeeds, so the mark delayed delete fails? Although it will retry successfully after a few seconds, but during these seconds, the user goes to read the cache, the old version of data is still there. For example, if a user initiates a recharge and the funds are already in the DB, only the update of the cache fails, resulting in the balance seen from the cache is still the old value. The handling of this situation is simple: when the user  writes to the DB successfully, the application does not return success to the user, but waits until the cache update is also successful before returning success to the user; when the user queries the recharge transaction, he has to query whether both the DB and the cache are successful, and only when both are successful will success be returned.
+
+Under the above processing strategy, when a user initiates a recharge, before the cache update is completed, the user sees that the transaction is still being processed and the result is unknown, then it still meets the requirement of strong consistency.
+
+#### Processing of Degraded Upgrades
+Now let's consider the handling of a downgrade applied to a problem with the Redis cache. Generally this upgrading and downgrading switch is in the configuration center, and when the configuration is modified, each application process is notified of the configuration change one after another and then downgraded in behavior. In the process of downgrading, there will be mixed access to cache and DB, and then there is a possibility of inconsistency in our above solution. So how can we handle this to ensure that the application still gets strong consistent results in this mixed access situation?
+
+In the process of mixed access, we can adopt the following strategy to ensure the data consistency in the mixed access of DB and cache.
+- When updating data, use distributed transactions to ensure the following operations are atomic operations
+  - Mark the cache as "updating"
+  - Update DB
+  - Remove the cache "update in progress" flag and mark it as delayed delete
+- When reading cached data, for the data marked as "updating", sleep and wait before reading again; for the data with delayed deletion, do not return the old data, and wait for the new data to finish before returning.
+- When reading DB data, it is read directly without any additional operation.
+
+The detailed process of downgrading needs to be as follows.
+1. initial state: all read cache, write DB+cache
+2. open read downgrade switch: partly read cache, partly read DB, write DB+cache
+3. read downgrade completed: all read DB, write DB+cache
+4. Open write downgrade switch: all read DB, some write DB only, some write DB+cache
+5. Write downgrade complete: all read DB, all write DB only
+
+The upgrade process is the opposite, as follows.
+1. initial state: all read DB, all write only DB
+2. open write upgrade switch: all read DB, some write only DB, some write DB + cache
+3. Write upgrade completed: all read DB, all write DB+cache
+4. Open read upgrade switch: partly read cache, partly read DB, all write DB+cache
+5. read upgrade complete: all read cache, all write DB+cache
+
+## Summary
+This article is very long, many of the analysis is rather obscure, and the use of the cache will be summarized.
+- The simplest way is: shorter cache time, allowing a small amount of database modification, not synchronized with the deletion of the cache
+- A more consistent way is: 2-phase message + delete cache
+- The eventually consistent way which can prevent cache breakdowns is: 2-phase message + delayed deletion
+- The strong consistent way is: 2-phase message + delayed delete + read/write switches
