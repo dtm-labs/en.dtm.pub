@@ -41,6 +41,6 @@ TEST_STORE=postgres go test . /... # Test the postgres engine
 Once your changes are complete, follow the process to initiate a PR, and then focus on the following
 
 - Whether your PR passes all of dtm's integration tests
-- If you add new code, keep an eye on your code [test coverage](https://coveralls.io/github/dtm-labs/dtm)
+- If you add new code, keep an eye on your code [test coverage](https://app.codecov.io/gh/dtm-labs/dtm)
 
 For PRs that pass the above two items, dtm staff will give you feedback as soon as possible, and if there are no major issues, your PR will be merged
