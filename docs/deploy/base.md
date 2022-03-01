@@ -1,90 +1,63 @@
 # Foundation
 
 ## Overview
-DTM can be divided into three roles, application program (AP), resource manager (RM), and transaction manager (TM).
-AP and RM are business micro-services, with DTM SDK integrated.
-Their deployment is done with the business without separate deployment.
-On the other hand, DTM needs separate deployment.
 
-This section describes the online deployment.
-Refer to [installation](../guide/install) if you only intend to run locally.
+This section describes the online deployment method, if you are only running locally, you can refer to [installation](../guide/start)
 
-Online deployment consists of the following steps: 
+The individual participants in the entire distributed transaction of dtm, are divided into three roles, AP, RM, and TM, see the dtm architecture in the guide for details. When you need to bring a distributed transaction application online, you need the following steps.
+- Prepare the sub-transaction barrier table used in RM, which needs to be created in your business database
+- Prepare the transaction state storage tables used in the DTM server. Only needed when you choose DTM's storage to be DB.
+- Design your deployment scenario: The options available include, direct binary deployment, docker deployment, K8S deployment.
+- Design your dtm multi-instances solution: Single instance deployment is not recommended for online applications. dtm is the same as a normal stateless application, just multi-instances.
+- Configure your dtm server
 
-1. Create the relevant database tables
-2. 
-2. Start the dtm container via environment variable setup (recommended)
-  - You can also use file-based configuration instead of environment variables (not recommended)
-  - You can also choose to compile the dtm and deploy it directly (not recommended)
+## Points to note
+- ** If the dtm server uses a database, then it must use the primary database, not the replicas. On the one hand dtm is write more read less; on the other hand dtm has high requirements for data consistency, slave library latency can lead to various problems. **
 
-## Prepare the database tables
+## Preparing RM data tables
+RM involves local resource management, so using the subtransaction barrier technology provided by DTM requires the creation of subtransaction barrier-related tables in the local database, see the barrier file in [Build SQL](https://github.com/dtm-labs/dtm/blob/main/sqls/) for details of the table sqls.
 
-### RM table
+## Prepare DTM data table
+DTM as TM role, if you choose the database as the storage engine, then the global transaction information will be stored in the database, you need to create the relevant tables in the corresponding database, see [build table SQL](https://github.com/dtm-labs/dtm/blob/main/sqls/) in the storage file for details of the table sqls
 
-RM relies on local resource management.
-Therefore, sub-transaction barrier technology provided by DTM requires the creation of sub-transaction barrier-related tables in the local database. 
-See [sub-transaction barrier table SQL](https://github.com/yedf/dtm/tree/main/dtmcli/barrier.mysql.sql)
+## Deployment scheme
+This part has more content, see [deploy](./deploy)
 
-### DTM table
+## dtm multi-instances solution
+Single instance deployments are not recommended for online applications, and dtm is no exception. You will need to do a multi-instance deployment depending on your deployment scenario
+- Microservice deployments, such as go-zero, polaris: such microservice protocols, there is already a multi-instances solution, just refer to the specific microservice case
+- Binary deployment, Docker deployment, deploy multi-instances DTM like your other stateless services.
+- K8S deployment: you can specify the number of replicas directly
 
-DTM plays the TM role.
-The global transaction information is stored in the database.
-You need to create the relevant tables in the corresponding database, see [DTM Global Transaction Table SQL](https://github.com/yedf/dtm/blob/main/dtmsvr/dtmsvr.mysql.sql) for details of the table building statement.
+You can refer to high availability section of [dtm architecture](../practice/arch) for how to collaborate and avoid problems with multiple instances of dtm.
 
-## DTM configuration
+## DTM Configuration
+DTM supports both environment variable and file configuration, if there are both environment variable and file, then the configuration file has high priority
 
-DTM supports both environment variables and file-based configuration.
-If there are both environment variables and configuration files, the configuration file has higher priority.
+#### Environment variables
+To support containerization and cloud-native in a friendly way, DTM supports environment variables for configuration
 
-### Environment variables (recommended way)
+All configurable options refer to: [yml sample configuration file](https://github.com/dtm-labs/dtm/blob/main/conf.sample.yml), for each configuration file in the configuration file, can be set by environment variables, the corresponding rules are as follows.
 
-In order to support containerization and cloud native in a friendly way, DTM supports environment-variable-based configuration
+```
+MicroService.EndPoint => MICRO_SERVICE_END_POINT
+```
 
-#### Required configuration items
+A sample configuration file using mysql is as follows.
+``` yml
+Store:
+  Driver: 'mysql'
+  Host: 'localhost'
+  User: 'root'
+  Password: ''
+  Port: 3306
+```
 
-There are three mandatory configuration items, DB_HOST, DB_USER, DB_PASSWORD
+For the most detailed configuration instructions, please refer to the above yml sample configuration file with comments for each configuration item
 
-##### DB_HOST
+#### yml file configuration
+In order to facilitate direct deployment and debugging, DTM also supports yml configuration file, refer to [yml sample configuration file](https://github.com/dtm-labs/dtm/blob/main/conf.sample.yml) for detailed configuration items.
 
-The host of the database
+When using yml to configure dtm, you need to specify the configuration file by command line, using the following command.
 
-##### DB_USER
-
-The user name of the database
-
-##### DB_PASSWORD
-
-The password for the database.
-
-#### Optional configuration items
-
-The optional configuration items have default values
-
-##### DB_DRIVER
-
-The database type. 
-The acceptable values are :
-
-- mysql dtm provides good support for mysql
-- postgres server-side dtm supports postgres, but dtmcli, as well as the examples, is currently not written to be compatible with postgres for simplicity.
-  You are encouraged to check out the postgres branch and play with it.
-
-Default is mysql.
-
-##### DB_PORT
-
-The port of the database.
-Default is 3306.
-
-##### CRON_JOB_INTERVAL
-
-Polling interval to check timed-out transactions.
-Default is 10, which means dtm will check the timed-out global transactions in the database every 10 seconds.
-
-### yaml-file-based configuration (non-recommended way)
-
-To facilitate direct deployment as well as debugging, DTM also supports yaml-file-based configuration.
-Please see the [sample yml configuration file](https://github.com/yedf/dtm/blob/main/conf.sample.yml).
-
-dtm will search for conf.yml and conf.sample.yml, in that order, starting from the working directory and then going up the parent directories.
-The search stops at the first match.
+`dtm -c . /conf.sample.yml`
