@@ -21,7 +21,7 @@ If the transaction state is already FAILED when prepare is called, then dtm will
 
 The details of each interface are as follows.
 
-## newGid GetGid
+## newGid
 
 This interface is used to get the gid. dtm's gid is generated using ip+snowflake, which has a very low probability of duplicating the gid if the ip is reused in a short period of time.
 
@@ -44,7 +44,7 @@ Sample response
 }
 ```
 
-## prepare prepare transaction
+## prepare
 
 This interface is used to prepare the transaction, which will be committed subsequently under normal circumstances.
 
@@ -70,7 +70,7 @@ Example response
 ```
 
 MSG's prepare request also carries branch information
-## MSG's prepare example
+## prepare example
 Example request
 ``` bash
 curl --location --request POST 'localhost:36789/api/dtmsvr/prepare' \
@@ -97,7 +97,7 @@ curl --location --request POST 'localhost:36789/api/dtmsvr/prepare' \
 - payloads indicates the body of the http request in each step
 - query_prepared specifies the url to query after the transaction message times out
 
-## submit submit transaction
+## submit
 
 This interface is used to submit global transactions
 
@@ -124,7 +124,7 @@ Example response
 
 Where the MSG and SAGA submits will also carry branch information
 
-## MSG submit example
+## submit example 1
 Example request
 ``` bash
 curl --location --request POST 'localhost:36789/api/dtmsvr/submit' \
@@ -145,10 +145,10 @@ curl --location --request POST 'localhost:36789/api/dtmsvr/submit' \
         "{\"amount\":30,\"transInResult\":\"SUCCESS\",\"transOutResult\":\"SUCCESS\"}"
     ]
 }'
-\```
+```
 See MSG's prepare example above for detailed field meanings
 
-## SAGA's submit example
+## submit example2
 Example request
 ``` bash
 curl --location --request POST 'localhost:36789/api/dtmsvr/submit' \
@@ -176,7 +176,7 @@ curl --location --request POST 'localhost:36789/api/dtmsvr/submit' \
 - steps specifies that the whole transaction will be divided into multiple steps, each step's forward action url is action, and the compensate action url is compensate
 - payloads the body of each step http request
 
-## abort rollback transaction
+## abort
 
 This interface is used to roll back the global transaction
 
@@ -209,7 +209,7 @@ This interface is used in TCC, XA transaction mode to register a transaction bra
 |:----:|:-----:|:----:|:-----:|
 | registerBranch | POST | JSON | [XA][] [TCC][] |
 
-#### Example of registering an XA branch request
+## registerBranch Example 1
 ``` bash
 curl --location --request POST 'localhost:36789/api/dtmsvr/registerBranch' \
 --header 'Content-Type: application/json' \
@@ -222,7 +222,7 @@ curl --location --request POST 'localhost:36789/api/dtmsvr/registerBranch' \
 ```
 - url: address of the service where the final commit/rollback is performed in xa transaction mode
 
-## Example of registering a TCC branch request
+## registerBranch Example 2
 
 ``` bash
 curl --location --request POST 'localhost:36789/api/dtmsvr/registerTccBranch' \

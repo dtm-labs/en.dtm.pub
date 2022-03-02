@@ -177,7 +177,7 @@ spec:
 
 ## Helm deployment
 
-## Using
+#### Using
 
 Install DTM chart:
 
@@ -197,9 +197,7 @@ Dismantle DTM chart:
 helm delete -n dtm-system dtm
 ```
 
-## Parameters
-
-### Configuration parameters
+#### Configuration parameters
 
 | Key | Description | Value |
 |-----------------|----------------------------------------------------------------------------------------------------------------|-------|
@@ -207,7 +205,7 @@ helm delete -n dtm-system dtm
 
 
 
-### Autoscaling parameters
+#### Autoscaling parameters
 
 | Name | Description | Value |
 |-------------------------------------------------|--------------------|---------|
@@ -217,7 +215,7 @@ helm delete -n dtm-system dtm
 | `autoscaling.targetCPUUtilizationPercentage` | target CPU utilization | `80` |
 | `autoscaling.targetMemoryUtilizationPercentage` | target memory utilization | `80` |
 
-### Ingress parameters
+#### Ingress parameters
 
 | Key | Description | Value |
 |--------------------------------|--------------------------------------------------|---------------------|

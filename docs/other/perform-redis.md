@@ -16,7 +16,7 @@ Two application servers: ecs.hfc6 8 core 16G CPU main frequency 3.1 GHz/3.5 GHz 
 
 ## Testing steps.
 
-### Prepare Redis
+## Prepare Redis
 Prepare Redis on top of the above Redis server. This time, because of the extreme performance, instead of using docker installation, use apt install to install it, and run the following command
 ``` bash
 apt update
@@ -25,7 +25,7 @@ apt install -y redis
 systemctl restart redis-server
 ```
 
-### Configure the application server
+## Configure the application server
 ``` bash
 apt update
 apt install -y git
@@ -34,28 +34,29 @@ git clone https://github.com/dtm-labs/dtm.git && cd dtm && git checkout 5907f99 
 
 Note that the following steps are required for both application servers
 
-### Configure dtm
+## Configure dtm
 Modify the conf.sample.yml in the dtm directory to configure the use of Redis, e.g.
-```
+
+``` bash
 Store:
   Driver: 'redis'
 	Host: 'redis ip'
 	Port: 6379
 
 # Also remove the configuration inside ExamplesDB, because we don't have mysql installed
-````
+```
 
-### Start the bench server
+## Start the bench server
 `
 LOG_LEVEL=warn go run bench/main.go redis
 `
 
-### Start the tests
+## Start the tests
 `
 ab -n 1000000 -c 10 "http://127.0.0.1:8083/api/busi_bench/benchEmptyUrl"
 `
 
-### Get the results
+## Get the results
 
 I see here that ab's results show that the number of operations completed per second for both application servers adds up to 10875
 
@@ -101,7 +102,7 @@ redis-benchmark -n 300000 EVAL "for k=1, 10 do; redis.call('SET', KEYS[1], ARGS[
 Inside Lua, we execute 10 consecutive Sets, and the number of requests completed per second is 61K, which is not very different from executing only 1 Set. This result is within our expectations, as the previous Pipeline results show that Redis' memory operation overhead is substantially less than that of the network.
 
 `
-## dtm Performance Analysis
+## DTM Performance Analysis
 dtm needs to track the progress of globally distributed transactions, and we take the example of the Saga under test, which involves roughly the following operations.
 - Saving transaction information, including global transactions, transaction branches, and indexes to find expired transactions. dtm uses a Lua script to perform these operations
 - Modify the transaction branch state when each transaction branch is completed. Since it is necessary to make sure that the global transaction is in the correct state when modifying the state to avoid rolling back transactions that are still in progress, dtm also uses a Lua script to do this
@@ -109,7 +110,7 @@ dtm needs to track the progress of globally distributed transactions, and we tak
 
 So the theoretical overhead of a transaction on Redis is about the overhead of 4 Lua scripts, so judging from the previous ability to complete about 60K simple Lua scripts per second, it is ideal to complete 15K distributed transactions per second. Since the actual Lua scripts are more complex and transfer more data than we tested, the final 10.8K transactions per second is about the performance limit.
 
-## Outlook
+## Summary
 10K transactions per second is already a very high performance, enough to handle most scenarios. This includes message queues, flash-sales, etc.
 
 When Redis is able to support such a large volume of transactions, if it is such a large volume of transactions for a long time, then redis storage space will soon be insufficient, and options may be added subsequently to allow timely cleanup of completed transactions

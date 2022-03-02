@@ -97,14 +97,14 @@ The three results with clear meaning in HTTP and gRPC can be represented like th
 
 The above HTTP and gRPC result definitions are friendly and compatible with the cloud-native retry policy. By default, if the microservice is configured with a retry policy, other results may be retried (usually HTTP 502 or gRPC Unavailable), while OK results will not be retried.
 
-## Similarities and differences with XA DTP model
+## VS XA DTP model
 DTM architecture and role, are very similar to the X/Open XA DTP model. RM, AP, TM take on the same function. DTM has just extended XA DTP model to the service/microservice architecture.
 
-![xa-dtp](../imgs/xa-dtp.png)
+![xa-dtp](../imgs/xa-dtp.jpeg)
 
 The main differences are as follows.
 - TM is no longer a single point, but a cluster, with high availability in itself. The single point problem in the original 2PC is solved by clustered dtm instances + shared highly available storage. There is no complex election process in this, but relies on the highly available shared storage provided by the cloud service (the cloud service provider does the failure re-election and the user does not have to care)
-- RM is not a direct database, but a service, and the service interacts with the database behind it.TM interacts with the RM service, and not directly with the database
+- RM is not a direct database, but a service, and the service interacts with the database behind it. TM interacts with the RM service, and not directly with the database
 - AP is not a direct local program, but a service access RM through the network of api request, rather than the local SDK call.
 
 ## Summary

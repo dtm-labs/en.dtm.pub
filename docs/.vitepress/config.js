@@ -147,11 +147,7 @@ module.exports = {
             },
             {
               text: 'Projects',
-              link: '/ref/prejects'
-            },
-            {
-              text: 'Go-zero Access',
-              link: '/ref/go-zero'
+              link: '/ref/projects'
             },
           ]
         },
@@ -185,18 +181,18 @@ module.exports = {
             },
             {
               text: 'Performance of Mysql Engine',
-              link: '/other/mysql'
+              link: '/other/performance'
             },
             {
               text: 'Performance of Redis Engine',
-              link: '/other/redis'
+              link: '/other/perform-redis'
             },
             {
               text: 'Alternatives',
               link: '/other/opensource'
             },
             {
-              text: 'Who uses DTM',
+              text: 'Who is Using',
               link: '/other/using'
             },
           ]

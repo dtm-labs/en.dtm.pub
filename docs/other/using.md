@@ -4,7 +4,7 @@ If you are using dtm, please help us to proliferate dtm better by adding a comme
 
 ## Case studies
 
-### Tencent {#tencent}
+#### Tencent {#tencent}
 Tencent has several internal business units that use dtm, covering many business scenarios.
 
 dtm merged several PRs mentioned by Tencent staff, with features such as Polaris, multiple log outputs, uber automaxprocs, MaxOpenConns, etc. Special thanks to Tencent staff!
@@ -16,7 +16,7 @@ These features of dtm are developed with priority to the needs of Tencent.
 - Header support
 
 [company website](https://www.tencent.com)
-### Ivy Dad {#ivydad}
+#### Ivy Dad {#ivydad}
 This is an online education company where I previously served as CTO
 
 dtm first solved the need from Ivydad, at that time, after researching the existing solutions and doing the initial architecture design, we thought that distributed transactions in the field of go was a strong need, our architecture design, many of our innovations were very advanced in the industry, and making dtm open source would allow dtm to get a very good development
@@ -25,14 +25,14 @@ Although the concurrency could be increased by splitting microservices, the cons
 
 [company website](https://www.ivydad.com)
 
-## Who is using
+## User List
 
 The following contains only some of the users
 
 <div style='vertical-align: middle'>
-    <img alt='Tencent' height='80' src='. /imgs/company/tencent.jpeg' />
-    <img alt='IvyDad' height='80' src='. /imgs/company/ivydad.png' />
-    <img alt='Eglass' height='80' src='. /imgs/company/eglass.png' />
-    <img alt='jiou' height='80' src='.. /imgs/company/jiou.png' />
-    <img alt='goldendata' height='80' src='.. /imgs/company/gdci.png' />
+    <img alt='Tencent' height='80' src='../imgs/company/tencent.jpeg' />
+    <img alt='IvyDad' height='80' src='../imgs/company/ivydad.png' />
+    <img alt='Eglass' height='80' src='../imgs/company/eglass.png' />
+    <img alt='jiou' height='80' src='../imgs/company/jiou.png' />
+    <img alt='goldendata' height='80' src='../imgs/company/gdci.png' />
 </div>
