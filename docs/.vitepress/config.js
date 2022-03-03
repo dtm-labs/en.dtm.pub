@@ -49,7 +49,19 @@ module.exports = {
             {
               text: 'Start here',
               link: '/guide/start'
-            }
+            },
+            {
+              text: '2-phase message example',
+              link: '/guide/e-msg'
+            },
+            {
+              text: 'SAGA example',
+              link: '/guide/e-saga'
+            },
+            {
+              text: 'TCC example',
+              link: '/guide/e-tcc'
+            },
           ]
         },
         {

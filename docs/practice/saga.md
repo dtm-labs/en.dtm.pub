@@ -72,6 +72,13 @@ When SAGA compensates branch A for failure, the forward operation of A may be 1.
 
 dtm provides subtransaction barrier technology to handle the above three cases automatically, developers only need to write the compensation operation case for 1, the related work is greatly simplified, for detailed principles, see the exception section below.
 
+::: tip Does a failed branch operation need to be compensated for?
+One often asked questions is whether a failed operation need to compensated for the failure.
+- XA and TCC modes require the compensation. SAGA is designed to always invoke compensation in order to keep things simple and uniform.
+- DTM supports multiple data sources in a single service, it may happen that data source 1 succeeds and data source 2 fails, in this case it is necessary to ensure that the compensation op is invoked and the compensation for data source 1 is executed
+- DTM provides a sub-transaction barrier that automatically handles the various scenarios in the compensation operation, the user only needs to execute the exact opposite of the forward operation
+:::
+
 ## Exceptions
 
 In the transactional domain, exceptions are a key consideration, such as downtime failures and process crashes that can lead to inconsistencies. When we are doing distributed transactions, then exceptions in distribution appear more frequently, and the design and handling of exceptions is even more important.
@@ -202,3 +209,5 @@ DTM, on the other hand, supports gRPC in a more friendly way, and has no require
 
 ## Summary
 If you have mastered the SAGA transactions in DTM, you can solve most of the problems in distributed transactions.
+
+A detail desciption of SAGA can be found here [SAGA](../practice/saga)
