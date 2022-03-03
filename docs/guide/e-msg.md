@@ -84,7 +84,7 @@ go run main.go http_msg_doAndCommit
 
 How can a 2-phase message guarantee that both the local transaction and the global transaction will either both succeed or both fail? What happens if the process crashes after the local transaction is committed and before the global transaction is committed? The following timing diagram provides a good explanation of how two-phase messages handle this problem.
 
-![msg_query](../imgs/msg_query.jpg)
+![msg_query](../imgs/msg_query.svg)
 
 The checkback processing logic in the diagram is already done automatically by dtm, the user just needs to paste the above code
 

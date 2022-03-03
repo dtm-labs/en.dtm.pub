@@ -55,8 +55,6 @@ Invited speaker at the China Database Conference. [Distributed Transaction Pract
 ## Quick start
 
 ::: tip Basics to have
-This tutorial assumes that you already have basic knowledge of distributed transactions. If you are not familiar with this, first read [Theory of Distributed Transactions](../guide/theory).
-
 This tutorial also assumes that you have some basic programming knowledge and can understand GO code in general. If you are not familiar with this, you can visit [golang](https://golang.google.cn/).
 :::
 
