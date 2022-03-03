@@ -8,11 +8,11 @@ A typical distributed transaction scenario is inter-bank transfers, where A need
 There is also a requirement that if there is a rollback, the SAGA mode will result in A discovering that its balance has been deducted, but the recipient, B, is late in receiving the balance, which will cause A great distress. The business would prefer to avoid this situation
 
 ## TCC Components
-The TCC is divided into 3 phases
+The TCC is divided into 3 part
 
-- Try phase: attempts to execute, completes all business checks (consistency), reserve necessary business resources.
-- Confirm phase: if all branches succeed in the Try phase, then we move to the Confirm phase, where Confirm actually executes the business without any business checks, using only the business resources reserved in the Try phase
-- Cancel phase: If one of the Trys in all branches fails, we go to the Cancel phase, which releases the business resources reserved in the Try phase.
+- Try part: attempts to execute, completes all business checks (consistency), reserve necessary business resources.
+- Confirm part: if all branches succeed in the Try phase, then we move to the Confirm phase, where Confirm actually executes the business without any business checks, using only the business resources reserved in the Try phase
+- Cancel part: If one of the Trys in all branches fails, we go to the Cancel phase, which releases the business resources reserved in the Try phase.
 
 If we were to perform a transaction similar to a bank interbank transfer, with TransOut and TransIn in separate microservices, a typical timing diagram for a successfully completed TCC transaction would be as follows.
 
