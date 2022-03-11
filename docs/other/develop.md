@@ -25,7 +25,7 @@ dtm has no testers, and its stability is mainly ensured by automated testing. We
 
 ** Attention!!! ** After you finish your changes, please make sure the following command shows that all test cases have passed
 
-`go test . /... `
+`make -f helper/Makefile`
 
 If your changes involve the storage engine part, then you need to set the environment variables to override the test cases under the specific engine
 
