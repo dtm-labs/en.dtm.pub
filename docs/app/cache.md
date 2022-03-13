@@ -121,7 +121,9 @@ Let's see if there are any problems with the delayed deletion method in various 
 
 There is an extreme case, that is, there is no data in the original cache, and suddenly a large number of requests arrive. This scenario is not friendly to any caching strategy. Such scenarios are to be avoided by developers and need to be solved by warming up, rather than being handled at the caching system.
 
-Delayed deletion can handle all kinds of situations in the cache very well, the principle is slightly more complicated to write and needs to be implemented through lua scripts, but the advantage is that it can be implemented as a sdk, fully reused and does not need to be done by every developer. You can see examples in [dtm-cases/cache](https://github.com/dtm-labs/dtm-cases/tree/main/cache)
+Delayed deletion can handle all kinds of situations in the cache very well, the principle is slightly more complicated to write and needs to be implemented through lua scripts, but the advantage is that it can be implemented as a sdk, fully reused and does not need to be done by every developer.
+
+For those interested, you can refer to [dtm-cases/cache](https://github.com/dtm-labs/dtm-cases/tree/main/cache) for detailed examples.
 
 ## Inconsistency by disorder
 The inconsistency described earlier is mainly caused by the inability to update the database and update the cache at the same time, and the window of inconsistency is the time difference between the two updates. But there is another kind of data inconsistency, which has a lower probability of occurrence. Here we take a look at the timing diagram for this case.
@@ -158,6 +160,8 @@ If the last version written to the database is Vi, the last version written to t
 database write Vi -> cached data is marked as deleted -> some query locks data and set uuidv -> query database result V -> locker in cache is uuidv, write result V
 
 In this sequence, V occurs after writing Vi, so V equals Vi, ensuring the evetual consistency of the cached data
+
+For those interested, you can refer to [dtm-cases/cache](https://github.com/dtm-labs/dtm-cases/tree/main/cache) for detailed examples.
 
 ## Strong Consistency for APP?
 The various scenarios for cache consistency have been described above, along with related solutions, so is it possible to guarantee the use of caching while still providing strongly consistent data reads and writes?
@@ -204,6 +208,8 @@ The upgrade process is the opposite, as follows.
 3. Write upgrade completed: all read DB, all write DB+cache
 4. Open read upgrade switch: partly read cache, partly read DB, all write DB+cache
 5. read upgrade complete: all read cache, all write DB+cache
+
+For those interested, you can refer to [dtm-cases/cache](https://github.com/dtm-labs/dtm-cases/tree/main/cache) for detailed examples.
 
 ## Summary
 This article is very long, many of the analysis is rather obscure, and the use of the cache will be summarized.
