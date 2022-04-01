@@ -16,6 +16,16 @@ These features of dtm are developed with priority to the needs of Tencent.
 - Header support
 
 [company website](https://www.tencent.com)
+
+### Bytedance {#bytedance}
+A department within Bytedance applies dtm to the automated build of an environment. Building an environment is an application scenario that requires coordination in multiple places, takes a long time and is prone to interruptions in the middle of the process. By introducing dtm, the following is achieved.
+
+- With dtm, the environment is not built in a half-built state, so that it is either built successfully or all cleaned up.
+- Through subtransaction barriers, avoiding some parts of the process being reentered concurrently and causing problems
+- Through dtm retry, to ensure that in case of error rollback, there must be a cleanup task that eventually completes successfully
+
+[company website](https://www.bytedance.com)
+
 #### Ivy Dad {#ivydad}
 This is an online education company where I previously served as CTO
 
