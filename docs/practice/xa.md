@@ -20,10 +20,12 @@ Let's see how the local database supports XA.
 Phase 1 Preparation
 
 ``` sql
-XA start '4fPqCNTYeSG'
+XA start '4fPqCNTYeSG' -- start a xa transaction
 UPDATE `user_account` SET `balance`=balance + 30,`update_time`='2021-06-09 11:50:42.438' WHERE user_id = '1'
 XA end '4fPqCNTYeSG'
+-- if connection closed before prepare, then the transaction is rollback automaticly
 XA prepare '4fPqCNTYeSG'
+
 -- When all participants have finished prepare, go to the second stage commit
 xa commit '4fPqCNTYeSG'
 ```
@@ -35,105 +37,28 @@ Let's start with a successful XA timing diagram:
 
 ![xa_normal](../imgs/xa_normal.jpg)
 
-Since the XA pattern requires the use of local database functions, we cannot reuse the previous generic processing functions.
-The whole amount of code will be a bit more complex than the simplest examples of several other patterns.
-
 #### http
 
 ``` go
-// XaSetup mounts the http api and creates XaClient
-func XaSetup(app *gin.Engine) {
-	app.POST(BusiAPI+"/TransInXa", common.WrapHandler(xaTransIn))
-	app.POST(BusiAPI+"/TransOutXa", common.WrapHandler(xaTransOut))
-	var err error
-	XaClient, err = dtmcli.NewXaClient(DtmServer, config.DB, Busi+"/xa", func(path string, xa *dtmcli.XaClient) {
-		app.POST(path, common.WrapHandler(func(c *gin.Context) (interface{}, error) {
-			return xa.HandleCallback(c.Query("gid"), c.Query("branch_id"), c.Query("action"))
-		}))
-	})
-	e2p(err)
-}
-
-// XaFireRequest registers a global XA transaction that calls the XA branch
-func XaFireRequest() string {
-	gid := dtmcli.MustGenGid(DtmServer)
-	res, err := XaClient.XaGlobalTransaction(gid, func(xa *dtmcli.Xa) (interface{}, error) {
-		resp, err := xa.CallBranch(&TransReq{Amount: 30}, Busi+"/TransOutXa")
-		if dtmcli.IsFailure(resp, err) {
+	gid := dtmcli.MustGenGid(dtmutil.DefaultHTTPServer)
+	err := dtmcli.XaGlobalTransaction(dtmutil.DefaultHTTPServer, gid, func(xa *dtmcli.Xa) (*resty.Response, error) {
+		resp, err := xa.CallBranch(&busi.TransReq{Amount: 30}, busi.Busi+"/TransOutXa")
+		if err != nil {
 			return resp, err
 		}
-		return xa.CallBranch(&TransReq{Amount: 30}, Busi+"/TransInXa")
-	})
-	dtmcli.PanicIfFailure(res, err)
-	return gid
-}
-
-func xaTransIn(c *gin.Context) (interface{}, error) {
-	return XaClient.XaLocalTransaction(c, func(db *sql.DB, xa *dtmcli.Xa) (interface{}, error) {
-		if reqFrom(c).TransInResult == "FAILURE" {
-			return M{"dtm_result": "FAILURE"}, nil
-		}
-		_, err := common.SdbExec(db, "update dtm_busi.user_account set balance=balance+? where user_id=?", reqFrom(c).Amount, 2)
-		return M{"dtm_result": "SUCCESS"}, err
-	})
-}
-
-func xaTransOut(c *gin.Context) (interface{}, error) {
-	return XaClient.XaLocalTransaction(c, func(db *sql.DB, xa *dtmcli.Xa) (interface{}, error) {
-		if reqFrom(c).TransOutResult == "FAILURE" {
-			return M{"dtm_result": "FAILURE"}, nil
-		}
-		_, err := common.SdbExec(db, "update dtm_busi.user_account set balance=balance-? where user_id=?", reqFrom(c).Amount, 1)
-		return M{"dtm_result": "SUCCESS"}, err
-	})
-}
-```
-
-#### grpc
-
-``` go
-	XaGrpcClient = dtmgrpc.NewXaGrpcClient(DtmGrpcServer, config.DB, BusiGrpc+"/examples.Busi/XaNotify")
-
-	gid := dtmgrpc.MustGenGid(DtmGrpcServer)
-	busiData := dtmcli.MustMarshal(&TransReq{Amount: 30})
-	err := XaGrpcClient.XaGlobalTransaction(gid, func(xa *dtmgrpc.XaGrpc) error {
-		_, err := xa.CallBranch(busiData, BusiGrpc+"/examples.Busi/TransOutXa")
-		if err != nil {
-			return err
-		}
-		_, err = xa.CallBranch(busiData, BusiGrpc+"/examples.Busi/TransInXa")
-		return err
+		return xa.CallBranch(&busi.TransReq{Amount: 30}, busi.Busi+"/TransInXa")
 	})
 
-func (s *busiServer) XaNotify(ctx context.Context, in *dtmgrpc.BusiRequest) (*emptypb.Empty, error) {
-	err := XaGrpcClient.HandleCallback(in.Info.Gid, in.Info.BranchID, in.Info.BranchType)
-	return &emptypb.Empty{}, dtmgrpc.Result2Error(nil, err)
-}
-
-func (s *busiServer) TransInXa(ctx context.Context, in *dtmgrpc.BusiRequest) (*emptypb.Empty, error) {
-	req := TransReq{}
-	dtmcli.MustUnmarshal(in.BusiData, &req)
-	return &emptypb.Empty{}, XaGrpcClient.XaLocalTransaction(in, func(db *sql.DB, xa *dtmgrpc.XaGrpc) error {
-		if req.TransInResult == "FAILURE" {
-			return status.New(codes.Aborted, "user return failure").Err()
-		}
-		_, err := dtmcli.SdbExec(db, "update dtm_busi.user_account set balance=balance+? where user_id=?", req.Amount, 2)
-		return err
+app.POST(BusiAPI+"/TransInXa", dtmutil.WrapHandler2(func(c *gin.Context) interface{} {
+	return dtmcli.XaLocalTransaction(c.Request.URL.Query(), BusiConf, func(db *sql.DB, xa *dtmcli.Xa) error {
+		return AdjustBalance(db, TransInUID, reqFrom(c).Amount, reqFrom(c).TransInResult)
 	})
-}
-
-func (s *busiServer) TransOutXa(ctx context.Context, in *dtmgrpc.BusiRequest) (*emptypb.Empty, error) {
-	req := TransReq{}
-	dtmcli.MustUnmarshal(in.BusiData, &req)
-	return &emptypb.Empty{}, XaGrpcClient.XaLocalTransaction(in, func(db *sql.DB, xa *dtmgrpc.XaGrpc) error {
-		if req.TransOutResult == "FAILURE" {
-			return status.New(codes.Aborted, "user return failure").Err()
-		}
-		_, err := dtmcli.SdbExec(db, "update dtm_busi.user_account set balance=balance-? where user_id=?", req.Amount, 1)
-		return err
+}))
+app.POST(BusiAPI+"/TransOutXa", dtmutil.WrapHandler2(func(c *gin.Context) interface{} {
+	return dtmcli.XaLocalTransaction(c.Request.URL.Query(), BusiConf, func(db *sql.DB, xa *dtmcli.Xa) error {
+		return AdjustBalance(db, TransOutUID, reqFrom(c).Amount, reqFrom(c).TransOutResult)
 	})
-}
-
+}))
 ```
 
 The above code first registers a global XA transaction, then adds two sub-transactions TransOut, TransIn.
@@ -147,10 +72,19 @@ If a prepare phase operation fails, DTM will call xa rollback of each child tran
 Let's pass TransInResult=FAILURE in the request load of XaFireRequest to fail purposely.
 
 ``` go
-req := &examples.TransReq{Amount: 30, TransInResult: "FAILURE"}
+req := &busi.TransReq{Amount: 30, TransInResult: "FAILURE"}
 ```
 
 The timing diagram for failure is as follows:
 
 ![xa_rollback](../imgs/xa_rollback.jpg)
 
+### Notices
+- The XA transaction interface for dtm has undergone a change in v1.13.0 to significantly simplify the use of XA transactions, and is overall consistent with the TCC interface and easier to get started with.
+- The second stage of XA transaction processing, the final commit or rollback of a branch, is also sent to the API `BusiAPI+"/TransOutXa"`, and within this service, `dtmcli.XaLocalTransaction` will automatically do `xa commit | xa rollback`. The body of the request is nil, so operations like parsing the body, such as the previous `reqFrom`, need to be placed inside `XaLocalTransaction`, otherwise the body parsing will result in errors.
+
+### Summary
+The features of XA transactions are
+- Simple and easy to understand
+- Easy to develop, rollback and other operations are done automatically by the underlying database
+- Long locking of resources, low concurrency, not suitable for highly concurrent operations

@@ -149,4 +149,4 @@ The final result balance will still be right, see [Exceptions and Solutions](../
 
 This article gives a complete SAGA transaction solution, a working SAGA, which you can use to solve your real problems with a few simple modifications to this example
 
-A detail desciption of SAGA can be found here [SAGA](../practice/saga)
+A detail description of SAGA can be found here [SAGA](../practice/saga)
