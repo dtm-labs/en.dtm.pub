@@ -1,7 +1,7 @@
 ## 2-phase messages
 
 ## Overview
-This article proposes a 2-phase messaging that can perfectly replace the existing transactional messaging or local message table architecture. In terms of complexity, convenience, performance, and code volume, the new architecture beats the existing architectural solutions and is a revolutionary architecture in this area.
+This article proposes a 2-phase message that can perfectly replace the existing transactional message or local message table architecture. In terms of complexity, convenience, performance, and code volume, the new architecture beats the existing architectural solutions and is a revolutionary architecture in this area.
 
 Here we use interbank transfer as an example to explain this new architecture in detail. The business scenario is described as follows.
 
@@ -82,21 +82,21 @@ The above problem can also use the local message table solution (for details of 
 - Writing polling tasks to take messages from the local message table and send them to the message queue
 - consuming messages and sending them to the appropriate processing service
 
-Comparing the two, 2-phase messaging has the following advantages.
+Comparing the two, 2-phase message has the following advantages.
 - No need to learn or maintain any message queues
 - No polling tasks to handle
 - No need to consume messages
 
-## VS transactional messaging
+## VS transactional message
 
-The above problem can also be solved using RocketMQ's transactional messaging solution (see [The Seven Most Classic Solutions to Distributed Transactions](https://medium.com/@dongfuye/the-seven-most-classic-solutions-for-distributed-transaction-management-3f915f331e15) for more details on the solution) to ensure the eventual consistency of data. If transactional messaging is used, the work required includes.
+The above problem can also be solved using RocketMQ's transactional message solution (see [The Seven Most Classic Solutions to Distributed Transactions](https://medium.com/@dongfuye/the-seven-most-classic-solutions-for-distributed-transaction-management-3f915f331e15) for more details on the solution) to ensure the eventual consistency of data. If transactional message is used, the work required includes.
 - opening a local transaction, sending a half-message, committing the transaction, and sending a commit message
 - consume timeout half-messages, query the local database for received timeout half-messages, and then perform Commit/Rollback
 - consume the committed message and send the message to the processing service
 
-Comparing the two solutions, 2-phase messaging has the following advantages.
+Comparing the two solutions, 2-phase message has the following advantages.
 - No need to learn or maintain any message queues
-- Complex operations between local transactions and sending messages need to be handled manually and can be buggy if not careful, while 2-phase messaging is fully automated
+- Complex operations between local transactions and sending messages need to be handled manually and can be buggy if not careful, while 2-phase message is fully automated
 - No need to consume messages
 
 2-phase messages are similar to RocketMQ's transaction messages in terms of 2-phase commit, and are a new architecture inspired by RocketMQ's transaction messages. The naming of 2-phase messages, instead of reusing RocketMQ's transaction messages, is mainly due to the fact that 2-phase messages are a significant architectural change, while on the other hand, using the name "transaction messages" in the context of distributed transactions can be confusing.
@@ -112,10 +112,10 @@ Comparing the two solutions, 2-phase messaging has the following advantages.
 For more information about synchronous mode, please refer to [transaction options](../ref/options) for waiting the result of a transaction
 :::
 
-#### Application of 2-phase messaging
+#### Application of 2-phase message
 2-phase messages can significantly reduce the difficulty of the eventual consistency solution of messages and have been widely used, here are two typical applications.
 - [flash-sale system](../app/flash): this architecture can easily carry tens of thousands of order requests on a single machine, and ensure that the number of inventory deducted and the number of orders are accurately matched
-- [cache consistency](../app/cache): this architecture can easily ensure the consistency of DB and cache through 2-phase messaging, which is much better than queue or subscription binlog solution
+- [cache consistency](../app/cache): this architecture can easily ensure the consistency of DB and cache through 2-phase message, which is much better than queue or subscription binlog solution
 
 Example of using redis, Mongo storage engine in combination with 2-phase messages can be found in [dtm-examples](https://github.com/dtm-labs/dtm-examples)
 
@@ -132,13 +132,13 @@ There is a big problem with this scenario above.
 - In the extreme case, a database failure (such as a process or disk jam) may occur, lasting longer than 2 minutes, and finally the data is committed again, then at this time, the data is not consistent, and manual intervention is needed to deal with it
 - If a local transaction, has been rollbacked, but the checkback operation, within two minutes, will constantly polling every second, causing unnecessary load on the server
 
-This problem is completely solved by dtm's 2-phase messaging solution. dtm's 2-phase messaging process works as follows.
+This problem is completely solved by dtm's 2-phase message solution. dtm's 2-phase message process works as follows.
 
 1. when a local transaction is processed, gid is inserted into the dtm_barrier.barrier table with an insert reason of COMMITTED. the table has a unique index on gid.
 2. when checking back, the operation of the 2-phase message does not directly check whether gid exists, but instead insert ignore a row with the same gid, together with the reason for ROLLBACKED. At this time, if there is already a record with gid in the table, then the new insert operation will be ignored, otherwise the row will be inserted.
 3. then query the records in the table with gid, if the reason of the record is COMMITTED, then the local transaction has been committed; if the reason of the record is ROLLBACKED, then the local transaction has been rolled back.
 
-So how do 2-phase messaging distinguish between in-progress and rolled back messages? The trick lies in the data inserted during the checkback. If the database transaction is still in progress at the time of the checkback, then the insert operation will be blocked by the in-progress transaction, because the insert operation will wait for the row lock held by the transaction. If the insert operation returns normally, then the local transaction in the database, which must have ended.
+So how do 2-phase message distinguish between in-progress and rolled back messages? The trick lies in the data inserted during the checkback. If the database transaction is still in progress at the time of the checkback, then the insert operation will be blocked by the in-progress transaction, because the insert operation will wait for the row lock held by the transaction. If the insert operation returns normally, then the local transaction in the database, which must have ended.
 
 ## Common messages
 2-phase messages can replace not only the local message table scheme, but also the normal message scheme. If you call Submit directly, then it is similar to the normal message scheme, but provides a more flexible and simple interface.
@@ -152,7 +152,7 @@ msg := dtmcli.NewMsg(DtmServer, gid).
 err := msg.Submit()
 ```
 
-This approach also provides an asynchronous interface without relying on a messaging message queue. In many scenarios of microservices, it can replace the original asynchronous messaging architecture.
+This approach also provides an asynchronous interface without relying on a message message queue. In many scenarios of microservices, it can replace the original asynchronous message architecture.
 
 ## Summary
-The two-stage messaging proposed in this article has a simple and elegant interface that brings a more elegant architecture than local message tables and Rocket transaction messages, and can help you better solve this type of data consistency problem without rollback.
+The two-stage message proposed in this article has a simple and elegant interface that brings a more elegant architecture than local message tables and Rocket transaction messages, and can help you better solve this type of data consistency problem without rollback.
