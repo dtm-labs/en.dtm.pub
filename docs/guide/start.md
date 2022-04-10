@@ -2,11 +2,35 @@
 
 ## What is DTM
 
-DTM is a distributed transaction solution which provides cross-service eventually data consistency. It provides saga, tcc, xa, 2-phase message strategies for a variety of application scenarios. It also supports multiple languages and multiple store engine to form up a transaction as following picture:
+DTM is a distributed transaction framework which provides cross-service eventual data consistency. It provides saga, tcc, xa, 2-phase message, outbox patterns for a variety of application scenarios. It also supports multiple languages and multiple store engine to form up a transaction as following:
 
 ![function](../imgs/function.png)
 
 Learn more behind the design of DTM in [why choose DTM](./why).
+
+## Who's using DTM (partial)
+
+[Tencent](https://www.tencent.com/)
+
+[Bytedance](https://www.bytedance.com/)
+
+[Ivydad](https://ivydad.com)
+
+[More ...](../other/using)
+
+<a style="
+    background-color:#646cff;
+    font-size: 0.9em;
+    color: #fff;
+    margin: 0.2em 0;
+    width: 200px;
+    text-align: center;
+    padding: 12px 24px;
+    display: inline-block;
+    vertical-align: middle;
+    border-radius: 2em;
+    font-weight: 600;
+" href="../other/opensource">Comparison to Seata</a>
 
 ## Features
 
@@ -27,30 +51,6 @@ Learn more behind the design of DTM in [why choose DTM](./why).
   - TCC, SAGA, XA, Transactional messages
 
 Invited speaker at the China Database Conference. [Distributed Transaction Practice in Multi-Language Environment](http://dtcc.it168.com/yicheng.html#b9)
-
-## Companies that adopt dtm
-
-[Ivydad](https://ivydad.com)
-
-[Eglass](https://epeijing.cn)
-
-[Jiou](http://jiou.me)
-
-[GoldenData](./start)
-
-<a style="
-    background-color:#646cff;
-    font-size: 0.9em;
-    color: #fff;
-    margin: 0.2em 0;
-    width: 200px;
-    text-align: center;
-    padding: 12px 24px;
-    display: inline-block;
-    vertical-align: middle;
-    border-radius: 2em;
-    font-weight: 600;
-" href="../other/opensource">Comparison to Seata</a>
 
 ## Quick start
 

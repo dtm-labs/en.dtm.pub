@@ -41,7 +41,10 @@ The following contains only some of the users
 
 <div style='vertical-align: middle'>
     <img alt='Tencent' height='80' src='../imgs/company/tencent.jpeg' />
+    <img alt='Bytedance' height='80' src='../imgs/company/bytedance.webp' />
     <img alt='IvyDad' height='80' src='../imgs/company/ivydad.png' />
+    <img alt='Juaiyouxuan' height='80' src='../imgs/company/juaiyouxuan.png' />
+    <img alt='Zhumangkeji' height='80' src='../imgs/company/zhumangkeji.jpeg' />
     <img alt='Eglass' height='80' src='../imgs/company/eglass.png' />
     <img alt='jiou' height='80' src='../imgs/company/jiou.png' />
     <img alt='goldendata' height='80' src='../imgs/company/gdci.png' />
