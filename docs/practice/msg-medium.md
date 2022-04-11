@@ -1,5 +1,7 @@
 # 2-Phase Message
 
+This article proposes an alternative pattern to SendBox: 2-phase message. It is not based on message queue, but based on [github.com/dtm-labs/dtm](https://github.com/dtm-labs/dtm), a highly available distributed transaction framework.
+
 An inter-bank transfer is a typical distributed transaction scenario, where A needs to transfer money across a bank to B. The balances of A and B are not in the same bank so that they are not stored in a single database. This transfer is typically crossing micro-services also.
 
 The main problem is that the transfer must update two systems simultaneously -- the increment of A' balance and the decrement of B's balance. This is called well-known "dual writes". A process crash between the two updates leaves the entire system in an inconsistent state.
@@ -7,8 +9,6 @@ The main problem is that the transfer must update two systems simultaneously -- 
 This "dual writes" problem can be solved by OutBox pattern. The principal of OutBox pattern can be found here [Transactional OutBox](https://microservices.io/patterns/data/transactional-outbox.html)
 
 ## 2-Phase Message
-
-This article proposes an alternative pattern to SendBox: 2-phase message. It is not based on message queue, but based on [github.com/dtm-labs/dtm](https://github.com/dtm-labs/dtm), a highly available distributed transaction framework.
 
 First let's take a glance at how to accomplish the above transfer task using the new pattern. The following codes is in Go, other languanges like C#, PHP can be found here: [dtm SDKs](https://en.dtm.pub/ref/sdk.html)
 
