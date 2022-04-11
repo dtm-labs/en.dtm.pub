@@ -1,6 +1,6 @@
 # 2-Phase Message
 
-This article proposes an alternative pattern to SendBox: 2-phase message. It is not based on message queue, but based on [github.com/dtm-labs/dtm](https://github.com/dtm-labs/dtm), a highly available distributed transaction framework.
+This article proposes an alternative pattern to OutBox: 2-phase message. It is not based on message queue, but based on [github.com/dtm-labs/dtm](https://github.com/dtm-labs/dtm), a highly available distributed transaction framework.
 
 An inter-bank transfer is a typical distributed transaction scenario, where A needs to transfer money across a bank to B. The balances of A and B are not in the same bank so that they are not stored in a single database. This transfer is typically crossing micro-services also.
 
@@ -87,12 +87,12 @@ Subsequently, dtm polls for the global transactions that have timed out, that is
 
 ## 2-Phase Message VS OutBox
 
-The SendBox pattern can also ensure the eventual consistency of the data. As far as SendBox pattern is used, the work required includes
+The OutBox pattern can also ensure the eventual consistency of the data. As far as OutBox pattern is used, the work required includes
 - Executing the local business logic in the local transaction, inserting the messages into the message table and committing them at last.
 - Writing polling tasks to take messages from the local message table and send them to the message queue. Instead of periodically  executing SQL to poll, this step may use another technique [Log-based Change Data Capture](https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/).
 - Consuming messages.
 
-Compared with SendBox, 2-phase message has the following advantages.
+Compared with OutBox, 2-phase message has the following advantages.
 - No need to learn or maintain any message queues
 - No polling tasks to handle
 - No need to consume messages
