@@ -10,7 +10,7 @@ This "dual writes" problem can be solved by OutBox pattern. The principal of Out
 
 ## 2-Phase Message
 
-First let's take a glance at how to accomplish the above transfer task using the new pattern. The following codes is in Go, other languanges like C#, PHP can be found here: [dtm SDKs](https://en.dtm.pub/ref/sdk.html)
+First let's take a glance at how to accomplish the above transfer task using the new pattern. The following codes is in Go, other languages like C#, PHP can be found here: [dtm SDKs](https://en.dtm.pub/ref/sdk.html)
 
 ``` Go
 msg := dtmcli.NewMsg(DtmServer, gid).
@@ -24,11 +24,11 @@ In the above codes:
 - First new a DTM `msg` global transaction, passing the dtm server address and the global transaction id
 - Add to the `msg` a branch business, which is the transfer operation TransIn, together with the data that needs to be passed to this service, the amount 30$
 - Then call `msg`'s DoAndSubmitDB. This function will ensure the atomic execution of both the business and submission of `msg`, either both succeeded, or both failed. There are three parameters for this function:
-	1. The checkback URL, will be explained later
+	1. The check-back URL, will be explained later
 	2. DB, is the database object for the business
 	3. The business function, here in our example is to debit 30$ for A's balance
 
-What will happen when the process crashed immediately after the success of decrement of A's balance? After a timeout, DTM will call the checkback URL to query whether the decrement is successful or unsuccessful. We can accomplish the checkback service by pasting the following code:
+What will happen when the process crashed immediately after the success of decrement of A's balance? After a timeout, DTM will call the check-back URL to query whether the decrement is successful or unsuccessful. We can accomplish the check-back service by pasting the following code:
 
 ``` Go
 	app.GET(BusiAPI+"/QueryPrepared", dtmutil.WrapHandler2(func(c *gin.Context) interface{} {
@@ -69,13 +69,13 @@ Let's take a look at the timing diagram in this case.
 
 ![msg_query](../imgs/msg_query.svg)
 
-In this case, DTM will poll the messages that is only Prepared but not Submitted after a certain timeout and call the checkback service specified by the message to query whether the business execution is successful.
+In this case, DTM will poll the messages that is only Prepared but not Submitted after a certain timeout and call the check-back service specified by the message to query whether the business execution is successful.
 
-This checkback service goes inside the message table and queries whether the local transaction for business has been committed.
-- **Committed:** Returns success, dtm submits the global transaction and proceeds to the next subtransaction call
-- **Rolled back:** Failure is returned, dtm terminates the global transaction and no more subtransaction calls are made
-- **In progress:** This checkback will wait for the final result and then proceeds to the previous committed/rollbacked case
-- **Not Started:** This checkback will insert data to ensure that the local transaction for business eventually fails
+This check-back service goes inside the message table and queries whether the local transaction for business has been committed.
+- **Committed:** Returns success, dtm submits the global transaction and proceeds to the next sub-transaction call
+- **Rolled back:** Failure is returned, dtm terminates the global transaction and no more sub-transaction calls are made
+- **In progress:** This check-back will wait for the final result and then proceeds to the previous committed/rollbacked case
+- **Not Started:** This check-back will insert data to ensure that the local transaction for business eventually fails
 
 ## Crash Before Commitment
 Let's take a look at the timing diagram of a local transaction being rolled back.
@@ -83,13 +83,13 @@ Let's take a look at the timing diagram of a local transaction being rolled back
 
 If the process is crashed immediately after the dtm receives the Prepare call and before the transaction commitment, the local database will detect the process's disconnection and rollback the local transaction automatically.
 
-Subsequently, dtm polls for the global transactions that have timed out, that is only Prepared but not Submitted, and checks back. The checkback service finds that the local transaction has been rollbacked and returns the result to dtm. dtm receives the result indicating rollbacked, and then marks the global transaction as failed, and finally ends the global transaction.
+Subsequently, dtm polls for the global transactions that have timed out, that is only Prepared but not Submitted, and checks back. The check-back service finds that the local transaction has been rollbacked and returns the result to dtm. dtm receives the result indicating rollbacked, and then marks the global transaction as failed, and finally ends the global transaction.
 
-## 2-Phase Message VS SendBox
+## 2-Phase Message VS OutBox
 
 The SendBox pattern can also ensure the eventual consistency of the data. As far as SendBox pattern is used, the work required includes
 - Executing the local business logic in the local transaction, inserting the messages into the message table and committing them at last.
-- Writing polling tasks to take messages from the local message table and send them to the message queue. Instead of periodically  executing sqls to poll, this step may use another technique [Log-based Change Data Capture](https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/).
+- Writing polling tasks to take messages from the local message table and send them to the message queue. Instead of periodically  executing SQL to poll, this step may use another technique [Log-based Change Data Capture](https://debezium.io/blog/2018/07/19/advantages-of-log-based-change-data-capture/).
 - Consuming messages.
 
 Compared with SendBox, 2-phase message has the following advantages.
@@ -104,18 +104,18 @@ Compared with SendBox, 2-phase message has the following advantages.
 - The message queue is asynchronous, while 2-phase messages support both asynchronous and synchronous. The default behaviour is asynchronous, and you can wait for the downstream service to complete synchronously just by setting `msg.WaitResult=true`.
 - 2-phase messages also support specifying multiple downstream services at the same time
 
-#### Application of 2-phase message
+#### Application of 2-Phase Message
 2-phase messages can significantly reduce the difficulty of the eventual consistency solution and have been widely used, here are two typical applications.
 - [flash-sale system](../app/flash): this architecture can easily carry tens of thousands of order requests on a single machine, and ensure that the number of inventory deducted and the number of orders are accurately matched
 - [cache consistency](../app/cache): this architecture can easily ensure the consistency of DB and cache through 2-phase message, which is much better than queue or subscription binlog solution
 
 Example of using redis, Mongo storage engine in combination with 2-phase messages can be found in [dtm-examples](https://github.com/dtm-labs/dtm-examples)
 
-## Checkback principle
+## Check-back Principle
 
-The checkback service appears in the previous timing diagram, as well as in the interface. This checkback design firstly existed in RocketMQ, and the implementation is left to developers to handle manually. In the 2-phase messages, it is handled automatically by copy-and-paste code. So what is the principle of automatic processing?
+The check-back service appears in the previous timing diagram, as well as in the interface. This check-back design firstly existed in RocketMQ, and the implementation is left to developers to handle manually. In the 2-phase messages, it is handled automatically by copy-and-paste code. So what is the principle of automatic processing?
 
-To perform a checkback, we firstly create a separate table in the business database instance where the gid(global transaction id) is stored. Gid is written to this table when the business transaction is processed.
+To perform a check-back, we firstly create a separate table in the business database instance where the gid(global transaction id) is stored. Gid is written to this table when the business transaction is processed.
 
 When we check back with the gid, if we find gid in the table, then it means the local transaction has been committed, so we can return to dtm the result that the local transaction has been committed.
 
@@ -124,19 +124,19 @@ When we check back with the gid, if we don't find gid in the table, then it mean
 2. The transaction has been rolled back.
 3. The transaction has not started.
 
-I have searched a lot of information about RocketMQ's checkback, but have not found a error-free solution. Most suggestions is that if the gid is not found, then do nothing and wait for the next checkback in next 10 seconds. If the checkback has lasted 2 minutes or longer and still cannot find the gid, then the local transaction is considered rollbacked.
+I have searched a lot of information about RocketMQ's check-back, but have not found a error-free solution. Most suggestions is that if the gid is not found, then do nothing and wait for the next check-back in next 10 seconds. If the check-back has lasted 2 minutes or longer and still cannot find the gid, then the local transaction is considered rollbacked.
 
 There are problems in the following cases.
 - In the extreme case, a database failure (such as a process pause or disk jam) may occur, lasting longer than 2 minutes, and finally the data is committed. But RocketMQ assume the transaction is rolled back, and cancel the global transaction, leaving the data in inconsistent state.
-- If a local transaction, has been rollbacked, but the checkback service, within two minutes, will constantly polling every 10 seconds, causing unnecessary load on the server.
+- If a local transaction, has been rollbacked, but the check-back service, within two minutes, will constantly polling every 10 seconds, causing unnecessary load on the server.
 
-These problesm is completely solved by dtm's 2-phase message solution. It works as follows.
+These problems are completely solved by dtm's 2-phase message solution. It works as follows.
 
 1. When a local transaction is processed, gid is inserted into the table `dtm_barrier.barrier` with an insert reason of `COMMITTED`. Table `dtm_barrier.barrier` has a unique index on gid.
 2. When checking back, the 2-phase message does not directly query whether gid exists, but instead insert ignore a row with the same gid, together with the reason `ROLLBACKED`. At this time, if there is already a record with gid in the table, then the new insert operation will be ignored, otherwise the row will be inserted.
 3. Query the records in the table with gid, if the reason of the record is `COMMITTED`, then the local transaction has been committed; if the reason of the record is `ROLLBACKED`, then the local transaction has been rolled back or will be rolled back.
 
-So how do 2-phase message distinguish between in-progress and rolled back messages? The trick lies in the data inserted during the checkback. If the database transaction is still in progress at the time of the checkback, then the insert operation will be blocked by the in-progress transaction, because the insert operation in checkback will wait for the row lock held by the in-progress transaction. If the insert operation returns normally, then the local transaction in the database, which must have ended.
+So how do 2-phase message distinguish between in-progress and rolled back messages? The trick lies in the data inserted during the check-back. If the database transaction is still in progress at the time of the check-back, then the insert operation will be blocked by the in-progress transaction, because the insert operation in check-back will wait for the row lock held by the in-progress transaction. If the insert operation returns normally, then the local transaction in the database, which must have ended.
 
 ## Normal messages
 2-phase messages can replace not only OutBox, but also the normal message pattern. If you call Submit directly, then it is similar to the normal message pattern, but provides a more flexible and simple interface.
