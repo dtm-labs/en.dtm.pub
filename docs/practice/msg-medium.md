@@ -28,7 +28,7 @@ In the above codes:
 	2. DB, is the database object for the business
 	3. The business function, here in our example is to debit 30$ for A's balance
 
-What will happen when the process crashed immediately after the success of decrement of A's balance? After a timeout, DTM will call the check-back URL to query whether the decrement is successful or unsuccessful. We can accomplish the check-back service by pasting the following code:
+What will happen when the process crashed immediately after the success of decrement for A's balance? After a timeout, DTM will call the check-back URL to query whether the decrement is successful or unsuccessful. We can accomplish the check-back service by pasting the following code:
 
 ``` Go
 	app.GET(BusiAPI+"/QueryPrepared", dtmutil.WrapHandler2(func(c *gin.Context) interface{} {
