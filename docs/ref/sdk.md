@@ -136,7 +136,7 @@ barrier example.
 xa Example.
 
 ``` go
-  return XaClient.XaLocalTransaction(c.Request.URL.Query(), func(db *sql.DB, xa *dtmcli.Xa) (interface{}, error) {
+  dtmcli.XaLocalTransaction(c.Request.URL.Query(), BusiConf, func(db *sql.DB, xa *dtmcli.Xa) error {
     // gorm provides an interface to construct gorm.DB from the standard sql.
     gdb, err := gorm.Open(mysql.New(mysql.Config{
       Conn: db,
@@ -145,7 +145,7 @@ xa Example.
       return nil, err
     }
     dbr := gdb.Exec("update dtm_busi.user_account set balance=balance-? where user_id=?" , reqFrom(c).Amount, 1)
-    return dtmcli.ResultSuccess, dbr.Error
+    return dbr.Error
   })
 ```
 
@@ -170,11 +170,11 @@ Example of a barrier.
 xa example
 
 ```Go to
-  return XaClient.XaLocalTransaction(c.Request.URL.Query(), func(db *sql.DB, xa *dtmcli.Xa) (interface{}, error) {
+  dtmcli.XaLocalTransaction(c.Request.URL.Query(), BusiConf, func(db *sql.DB, xa *dtmcli.Xa) error {
     dialect := goqu.Dialect("mysql")
     godb := dialect.DB(db)
     _, err := godb.Exec("update dtm_busi.user_account set balance=balance-? where user_id=?" , reqFrom(c).Amount, 1)
-    return dtmcli.ResultSuccess, err
+    return err
   })
 ```
 
@@ -200,10 +200,10 @@ Example of an barrier.
 xa example
 
 ```Go to
-  return XaClient.XaLocalTransaction(c.Request.URL.Query(), func(db *sql.DB, xa *dtmcli.Xa) (interface{}, error) {
+  return dtmcli.XaLocalTransaction(c.Request.URL.Query(), BusiConf, func(db *sql.DB, xa *dtmcli.Xa) error {
     xdb, _ := xorm.NewEngineWithDB("mysql", "dtm", core.FromDB(db))
     _, err := xdb.Exec("update dtm_busi.user_account set balance=balance-? where user_id=?" , reqFrom(c).Amount, 1)
-    return dtmcli.ResultSuccess, err
+    return err
   })
 
 ```
@@ -226,10 +226,10 @@ Example of a barrier.
 xa example
 
 ```Go to
-  return XaClient.XaLocalTransaction(c.Request.URL.Query(), func(db *sql.DB, xa *dtmcli.Xa) (interface{}, error) {
+  return dtmcli.XaLocalTransaction(c.Request.URL.Query(), BusiConf, func(db *sql.DB, xa *dtmcli.Xa) error {
     conn := NewSqlConnFromDB(db)
     _, err := conn.Exec("update dtm_busi.user_account set balance=balance-? where user_id=?" , reqFrom(c).Amount, 1)
-    return dtmcli.ResultSuccess, err
+    return err
   })
 
 ```
