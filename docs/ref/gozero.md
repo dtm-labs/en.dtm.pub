@@ -25,7 +25,7 @@ go run app/main.go -c conf.yml
 ```
 - Run a go-zero service
 ```
-git clone github.com/dtm-labs/dtmdriver-clients && cd dtmdriver-clients
+git clone https://github.com/dtm-labs/dtmdriver-clients && cd dtmdriver-clients
 cd gozero/trans && go run trans.go
 ```
 - Initiate a go-zero transaction using dtm
