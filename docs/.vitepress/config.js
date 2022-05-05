@@ -4,7 +4,17 @@ module.exports = {
   lang: 'en-US',
   head: [
     ['link', { rel: 'icon', type: 'image/svg', href: '/dtm.svg' }],
-    ['script', { defer: true, type: 'text/javascript', src: 'https://v1.cnzz.com/z_stat.php?id=1280325584&web_id=1280325584' }]
+    ['script', {},
+      `
+      var _hmt = _hmt || [];
+      (function() {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?16273180c0c2741f6d6f7ca8f3f334e4";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+      })();
+      `
+    ]
   ],
   themeConfig: {
     logo: '/dtm.svg',
