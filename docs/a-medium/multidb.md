@@ -85,7 +85,7 @@ The compensation service code is almost identical to the previous code of the fo
 ## Other exceptions
 When writing forward operations and compensation operations, there is actually another exception called "Suspension". A global transaction will roll back when it is timeout or retries has reach the configured limit. The normal case is that the forward operation is performed before the compensation, but in case of process suspension the compensation may be performed before the forward operation. So the forward operation also needs to determine whether the compensation has been executed, and in the case that it has, the data adjustment needs to be skipped as well.
 
-For DTM users, these exceptions have been handled gracefully and properly and you, as a user, need only follow the `MustBarrierFromGin(c).Call` call described above and do not need to care about them at all. The principle for DTM handling these exceptions is described in detail here: [Exceptions and sub-transaction barriers](https://dtm.pub/practice/barrier.html)
+For DTM users, these exceptions have been handled gracefully and properly and you, as a user, need only follow the `MustBarrierFromGin(c).Call` call described above and do not need to care about them at all. The principle for DTM handling these exceptions is described in detail here: [Exceptions and sub-transaction barriers](https://en.dtm.pub/practice/barrier.html)
 
 ## Initiating a Distributed Transaction
 After writing the individual sub-transaction services, the following codes of the code initiates a Saga global transaction.

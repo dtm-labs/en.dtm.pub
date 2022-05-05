@@ -34,5 +34,5 @@ Go's error handling, a lot `if err ! = nil { return err }`, resulting in a lot o
 ## How to read dtm source code
 If you need to read the source code of DTM, the recommended way is
 - dtm home README, run a quick-start, understand the dtm a distributed transaction process
-- Read the documentation in dtm.pub to understand the theory and transactions, and run the examples with dtm-labs/dtm-examples
+- Read the documentation in en.dtm.pub to understand the theory and transactions, and run the examples with dtm-labs/dtm-examples
 - Go to test of dtm project, run test cases of interest, and trace and debug dtm SDK and server code with test cases
