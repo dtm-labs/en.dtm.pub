@@ -3,73 +3,101 @@
 ## What is XA
 
 XA is a specification for distributed transactions proposed by the X/Open organization.
-The XA specification mainly defines the interface between a (global) Transaction Manager (TM) and a (local) Resource Manager (RM).
-Local databases such as mysql play the RM role in the XA specification.
+The X/Open Distributed Transaction Processing (DTP) model envisages three software
+components:
+- An application program (AP) defines transaction boundaries and specifies actions that constitute a transaction.
+- Resource managers (RMs, such as databases or file access systems) provide access to shared resources.
+- A separate component called a transaction manager (TM) assigns identifiers to transactions, monitors their progress, and takes responsibility for transaction completion and for failure recovery.
+
+The following figure illustrates the interfaces defined by the X/Open DTP model.
+
+![xa-dtp](../imgs/xa-dtp.jpeg)
 
 XA is divided into two phases.
 
  - Phase 1 (prepare): All participating RMs prepare to execute their transactions and lock the required resources.
-   When the participants are ready, they report to TM that they are ready.
+   When each participant is ready, it report to TM.
 
- - Phase 2 (commit/rollback): When the transaction manager (TM) confirms that all participants (RM) are ready, it sends a commit command to all participants.
+ - Phase 2 (commit/rollback): When the transaction manager (TM) receives that all participants (RM) are ready, it sends commit commands to all participants. Otherwise, it sends rollback commands to all participants.
 
-At present, almost all mainstream databases support XA transactions, including mysql, oracle, sqlserver, postgre
+At present, almost all popular databases support XA transactions, including Mysql, Oracle, SqlServer, and Postgres
 
-Let's see how the local database supports XA.
-
-Phase 1 Preparation
+## XA in Mysql
+Let's see how database Mysql supports XA.
 
 ``` sql
 XA start '4fPqCNTYeSG' -- start a xa transaction
-UPDATE `user_account` SET `balance`=balance + 30,`update_time`='2021-06-09 11:50:42.438' WHERE user_id = '1'
+UPDATE `user_account` SET `balance`=balance + 30,`update_time`='2021-06-09 11:50:42.438' WHERE user_id = 1
 XA end '4fPqCNTYeSG'
--- if connection closed before prepare, then the transaction is rollback automaticly
+-- if connection closed before `prepare`, then the transaction is rolled back automatically
 XA prepare '4fPqCNTYeSG'
 
--- When all participants have finished prepare, go to the second stage commit
+-- When all participants have all prepared, call commit in phase 2
 xa commit '4fPqCNTYeSG'
+
+-- When any participants have failed to prepare, call rollback in phase 2
+-- xa rollback '4fPqCNTYeSG'
 ```
 
-## XA hands-on
+## Business Scenario
+An inter-bank transfer is a typical distributed transaction scenario, where A needs to transfer money across a bank to B. Both the withdraw and the deposit may succeed or fail, and it is required that the sum of balance of A and B should not change after the transfer finished, regardless of any errors that occur.
 
-Let's complete a full XA.
-Let's start with a successful XA timing diagram:
+## Implement a Distributed XA Transaction
+
+Distributed XA transactions can solve the above business problem. A successful global transaction is illustrated by the following figure:
 
 ![xa_normal](../imgs/xa_normal.jpg)
 
-#### http
+The code to implement it in Go is quite simple:
 
 ``` go
-	gid := dtmcli.MustGenGid(dtmutil.DefaultHTTPServer)
-	err := dtmcli.XaGlobalTransaction(dtmutil.DefaultHTTPServer, gid, func(xa *dtmcli.Xa) (*resty.Response, error) {
-		resp, err := xa.CallBranch(&busi.TransReq{Amount: 30}, busi.Busi+"/TransOutXa")
-		if err != nil {
-			return resp, err
-		}
-		return xa.CallBranch(&busi.TransReq{Amount: 30}, busi.Busi+"/TransInXa")
-	})
+gid := dtmcli.MustGenGid(dtmutil.DefaultHTTPServer)
+err := dtmcli.XaGlobalTransaction(dtmutil.DefaultHTTPServer, gid, func(xa *dtmcli.Xa) (*resty.Response, error) {
+  resp, err := xa.CallBranch(&busi.TransReq{Amount: 30}, busi.Busi+"/TransOutXa")
+  if err != nil {
+    return resp, err
+  }
+  return xa.CallBranch(&busi.TransReq{Amount: 30}, busi.Busi+"/TransInXa")
+})
 
 app.POST(BusiAPI+"/TransInXa", dtmutil.WrapHandler2(func(c *gin.Context) interface{} {
-	return dtmcli.XaLocalTransaction(c.Request.URL.Query(), BusiConf, func(db *sql.DB, xa *dtmcli.Xa) error {
-		return AdjustBalance(db, TransInUID, reqFrom(c).Amount, reqFrom(c).TransInResult)
-	})
+  return dtmcli.XaLocalTransaction(c.Request.URL.Query(), BusiConf, func(db *sql.DB, xa *dtmcli.Xa) error {
+    return AdjustBalance(db, TransInUID, reqFrom(c).Amount, reqFrom(c).TransInResult)
+  })
 }))
 app.POST(BusiAPI+"/TransOutXa", dtmutil.WrapHandler2(func(c *gin.Context) interface{} {
-	return dtmcli.XaLocalTransaction(c.Request.URL.Query(), BusiConf, func(db *sql.DB, xa *dtmcli.Xa) error {
-		return AdjustBalance(db, TransOutUID, reqFrom(c).Amount, reqFrom(c).TransOutResult)
-	})
+  return dtmcli.XaLocalTransaction(c.Request.URL.Query(), BusiConf, func(db *sql.DB, xa *dtmcli.Xa) error {
+    return AdjustBalance(db, TransOutUID, reqFrom(c).Amount, reqFrom(c).TransOutResult)
+  })
 }))
 ```
 
-The above code first registers a global XA transaction, then adds two sub-transactions TransOut, TransIn.
+The above code first registers a global XA transaction, and then calls two sub-transactions TransOut, TransIn.
 After all the sub-transactions are executed successfully, the global XA transaction is committed to DTM.
-DTM receives the committed xa global transaction, and calls the xa commit of all the sub-transactions to complete the whole xa transaction.
+DTM receives the commitment of the XA global transaction, then calls the `XA commit` of all the sub-transactions, and finally change the status of global transaction to succeeded.
 
-## Rollback upon failure
+Code samples in other languages can be found here: [SDKs](../ref/sdk)
 
-If a prepare phase operation fails, DTM will call xa rollback of each child transaction to roll back, and the transaction is successfully rolled back at last.
+## Run It
+You can run the above example by running the following commands.
 
-Let's pass TransInResult=FAILURE in the request load of XaFireRequest to fail purposely.
+#### Run DTM
+``` bash
+git clone https://github.com/dtm-labs/dtm && cd dtm
+go run main.go
+```
+
+#### Run Example
+``` bash
+git clone https://github.com/dtm-labs/dtm-examples && cd dtm-examples
+go run main.go http_xa
+```
+
+## Rollback upon Failure
+
+If any `prepare` operation fails, DTM will call `XA rollback` of each sub-transaction to roll back, and finally change the status of the global transaction to failed.
+
+Let's pass `TransInResult="FAILURE"` in the request payload of XaFireRequest to trigger a failure.
 
 ``` go
 req := &busi.TransReq{Amount: 30, TransInResult: "FAILURE"}
@@ -79,12 +107,24 @@ The timing diagram for failure is as follows:
 
 ![xa_rollback](../imgs/xa_rollback.jpg)
 
-### Notices
-- The XA transaction interface for dtm has undergone a change in v1.13.0 to significantly simplify the use of XA transactions, and is overall consistent with the TCC interface and easier to get started with.
-- The second stage of XA transaction processing, the final commit or rollback of a branch, is also sent to the API `BusiAPI+"/TransOutXa"`, and within this service, `dtmcli.XaLocalTransaction` will automatically do `xa commit | xa rollback`. The body of the request is nil, so operations like parsing the body, such as the previous `reqFrom`, need to be placed inside `XaLocalTransaction`, otherwise the body parsing will result in errors.
+#### Notices
+- The command of second phase, is also sent to the API `BusiAPI+"/TransOutXa"`, and within this service, `dtmcli.XaLocalTransaction` will automatically call `XA commit` | `XA rollback`. So the body of the request is nil, and parsing body operations, such as the previous `reqFrom`, need to be placed inside `XaLocalTransaction`, otherwise the body parsing will result in errors.
 
-### Summary
-The features of XA transactions are
+## TM Failure
+ The complexity of two-phase commit comes from all the failure scenarios that can arise. The most annoying failure happens after a participant has acknowledged prepared and before it receives the decision, such as a failure of the coordinator.
+
+ Our solution to this failure is quite simple and robust. Since most of cloud vendors provide highly-available databases, we can store the progress of sub-transactions in these databases, run multiple instance of TMs. Each instance will poll the paused transactions and continue to process them.
+
+ The cloud vendor takes care of the database failure, and may use Paxos/Raft to robustly elect a healthy instance.
+
+## Advantages and Disadvantages
+Compared to other patterns like SAGA and TCC, the advantages of XA global transactions are:
 - Simple and easy to understand
-- Easy to develop, rollback and other operations are done automatically by the underlying database
-- Long locking of resources, low concurrency, not suitable for highly concurrent operations
+- Automatic rollback of business, no need to write compensation manually
+
+The disadvantages of XA are:
+- Need the XA transaction from underlying database
+- Data is locked from data modification until the commitment, much longer than other patterns. It not suitable for highly concurrent business.
+
+## Conclusion
+In this article, I've introduce the basic principle of XA transaction, and presents a practical example of it. Readers can easily follow the example to handle their own businesses.
