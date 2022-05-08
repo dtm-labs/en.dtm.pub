@@ -30,18 +30,12 @@ module.exports = {
     nav: [
       { text: 'Guide', link: '/guide/start' },
       { text: '中文', link: 'https://dtm.pub' },
-      { text: 'Blog', link: '/blogs/classic-dtrans' },
+      { text: 'Blog', link: 'https://medium.com/@dongfuye' },
       // { text: '示例', link: '/examples/' },
       { text: 'Github', link: 'https://github.com/dtm-labs/dtm' },
       { text: 'zhihu', link: 'https://www.zhihu.com/people/ye-dongfu' }
     ],
     sidebar: {
-      '/blogs/': [
-        {
-          text: 'The seven classic solutions for distributed transanction management',
-          link: 'https://medium.com/@dongfuye/the-seven-most-classic-solutions-for-distributed-transaction-management-3f915f331e15',
-        },
-      ],
       '/examples/': 'auto',
       // catch-all fallback
       '/': [
