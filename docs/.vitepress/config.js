@@ -203,10 +203,10 @@ module.exports = {
               text: 'Performance of Redis Engine',
               link: '/other/perform-redis'
             },
-            {
-              text: 'Alternatives',
-              link: '/other/opensource'
-            },
+            // {
+            //   text: 'Alternatives',
+            //   link: '/other/opensource'
+            // },
             {
               text: 'Who is Using',
               link: '/other/using'
