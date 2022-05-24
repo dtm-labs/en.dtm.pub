@@ -44,3 +44,18 @@ Once your changes are complete, follow the process to initiate a PR, and then fo
 - If you add new code, keep an eye on your code [test coverage](https://app.codecov.io/gh/dtm-labs/dtm)
 
 For PRs that pass the above two items, dtm staff will give you feedback as soon as possible, and if there are no major issues, your PR will be merged
+
+## Console
+As of 1.14.0, dtm has added a console, which uses a technology stack that includes
+* vue3
+* ant-design-vue
+* typescript
+* pinia
+* vite
+
+If you are modifying the console functionality, then after you have started the dtm server as described earlier, go to the admin directory and run the following command.
+```
+yarn dev
+```
+
+Then you can access `localhost:6789`.

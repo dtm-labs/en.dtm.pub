@@ -171,6 +171,10 @@ module.exports = {
           text: 'Deployment',
           children: [
             {
+              text: 'Console',
+              link: '/deploy/admin'
+            },
+            {
               text: 'Base',
               link: '/deploy/base'
             },
