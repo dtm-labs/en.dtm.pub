@@ -135,59 +135,59 @@ A common approach to preventing cache misses is to use distributed Redis locks t
 - For example, if there is an important hotspot data, the computation cost is high and it takes 3s to get the result, then the above solution will delete a hotspot data, there will be a large number of requests waiting 3s to return the result. On the one hand, it may cause a large number of requests timeout, on the other hand many connections are hold in these 3s, will lead to a sudden increase in the number of concurrent connections, may cause system instability.
 - In addition, when using Redis locks, the part of the user base that does not get the lock will usually be polled at regular intervals, and this sleep time is not easy to set. If you set a relatively large sleep time of 1s, it is too slow to return cached data for which the result is calculated in 10ms; if you set a sleep time that is too short, then it is very CPU and Redis performance intensive.
 
-#### Tag as Deleted Method // TODO
+#### Tag as Deleted Method
 The "Tag as Deleted" method implemented by [dtm-labs/rockscache](https://github.com/dtm-labs/rockscache) described earlier is also a delete method, but it completely solves the problem of cache miss in the delete cache, and the collateral problems.
-1. The cache breakdown problem: in the mark-delete method, if the data in the cache does not exist, then this data in the cache is locked, thus avoiding multiple requests hitting the back-end database.
-2. The above problems of large numbers of requests taking 3s to return data, and timed polling, also do not exist in delayed deletion, as when hot data is delayed deleted, the old version of the data is still in the cache and will be returned immediately, without waiting.
+1. The cache breakdown problem: in the tag-as-deleted method, if the data in the cache does not exist, then this data in the cache is locked, thus avoiding multiple requests hitting the back-end database.
+2. The above problems of large numbers of requests taking 3s to return data, and timed polling, also do not exist in delayed deletion, as when hot data is taged as deleted, the old version of the data is still in the cache and will be returned immediately, without waiting.
 
-Let's see how the mark-delete method performs for different data access frequencies.
-1. Hotspot data, 1K qps, cache time 5ms, at this point the mark-delete method will return expired data in about 5~8ms, while updating the DB first and then the cache will also return expired data in about 0~3ms because it takes time to update the cache, so there is not much difference between the two.
-2. Hot data, 1K qps, calculate cache time 3s, at this time mark delete method, about 3s of time, will return expired data. It is usually better behaviour to return old data then to wait 3s for the data to be returned.
-3. normal data, 50 qps, 1s computed cache time, when the behaviour of the mark-delete method is analysed, similar to 2, without problems.
-4. low-frequency data, accessed once every 5 seconds, with a calculated cache time of 3s, when the behaviour of the mark-delete method is essentially the same as the delete-cache policy, no problem
-5. cold data, accessed once every 10 minutes, at this point the mark-delete method, and the delete cache policy is basically the same, except that the data is kept for 10s longer than the delete cache method, which does not take up much space, no problem
+Let's see how the tag-as-deleted method performs for different data access frequencies.
+1. Hotspot data, 1K qps, calculation cost 5ms: the tag-as-deleted method will return expired data in about 5~8ms, while updating the DB first and then the cache will also return expired data in about 0~3ms because it takes time to update the cache, so there is not much difference between the two.
+2. Hot data, 1K qps, calculation cost 3s: at this time tag-as-deleted method, in about 3s of time, will return expired data. It is usually better behaviour to return old data than to wait 3s for the data to be returned.
+3. Normal data, 50 qps, calculation cost 1s: when the behaviour of the tag-as-deleted method is analysed, the result is similar to 2, no problems.
+4. Low-frequency data, accessed once every 5 seconds, calculation cost 3s: when the behaviour of the tag-as-deleted method is essentially the same as the delete-cache policy, no problems
+5. Cold data, accessed once every 10 minutes: The tag-as-deleted method and the delete cache policy is basically the same, except that the data is kept for 10s longer than the delete cache method, which does not take up much space, no problem
 
-There is an extreme case where there is no data in the cache and suddenly a large number of requests arrive, a scenario that is not friendly to the update cache method, the delete cache method, or the mark-delete method. This is a scenario that developers need to avoid, and needs to be resolved by warming up the cache, rather than throwing it at the caching system directly. Of course, the mark-delete method does not perform any less well than any other solution as it already minimises the amount of requests hitting the database.
+There is an extreme case where there is no data in the cache and suddenly a large number of requests arrive, a scenario which is not friendly to the update cache method, the delete cache method, or the tag-as-deleted method. This is a scenario that developers need to avoid, and needs to be resolved by warming up the cache, rather than throwing it to the caching system directly. Of course, the tag-as-deleted method does not perform any less well than any other solution as it already minimises the amount of requests hitting the database.
 
-## Anti-cache-penetration and cache avalanche
-[dtm-labs/rockscache](https://github.com/dtm-labs/rockscache) also implements anti-cache-penetration and cache avalanche.
+## Anti-penetration and Anti-avalanche
+[dtm-labs/rockscache](https://github.com/dtm-labs/rockscache) also implements anti-penetration and anti-avalanche.
 
-Cache penetration is when data that is not available in either the cache or the database is requested in large numbers. Since the data does not exist, the cache does not exist either and all requests are directed to the database. rockscache can set `EmptyExipire` to set the cache time for empty results, if set to 0, then no empty data is cached and cache-penetration prevention is turned off.
+Cache penetration is when data that is not available in either the cache or the database is requested in large numbers. Since the data does not exist, the cache does not exist either and all requests are directed to the database. rockscache can set `EmptyExipire` to set the cache time for empty results, if set to 0, then no empty data is cached and anti-penetration is turned off.
 
-A cache avalanche is when there is a large amount of data in the cache, all of which expires at the same point in time, or within a short period of time, and when requests come in with no data in the cache, they will all request the database, which will cause a sudden increase in pressure on the database, which will go down if it can't cope. rockscache can set `RandomExpireAdjustment` to add a random value to the expiry time to avoid simultaneous expiry. to avoid simultaneous expiration.
+A cache avalanche is when there is a large amount of data in the cache, all of which expires at the same point of time, or within a short period of time, and when requests come in with no data in the cache, they will all request the database, which will cause a sudden increase in pressure on the database, which will go down if it can't cope. rockscache can set `RandomExpireAdjustment` to add a random value to the expiry time to avoid simultaneous expiration.
 
-Can ## applications be strongly consistent?
+## Strong Consistency?
 The various scenarios for cache consistency have been described above, along with the associated solutions, but is it possible to guarantee the use of cache and still provide strongly consistent data reads and writes? Strongly consistent read and write requirements are less common than the previous scenarios of eventual consistency requirements, but there are quite a few scenarios in the financial sector.
 
 When we discuss strong consistency here, we need to start by making the meaning of consistency clear.
 
-A developer's most intuitive understanding of strong consistency is likely to be that the database and cache are identical, and that the latest writes are available during and after the write, whether read directly from the database or directly from the cache. This "strong consistency" between two separate systems is, to be very clear, theoretically impossible, because updating the database and updating the cache are on different machines and cannot be done at the same time; there will be an interval in any case, during which there must be inconsistencies.
+A developer's most intuitive understanding of strong consistency is likely to be that the database and cache are identical, and that the latest writes are available during and after the write, whether read directly from the database or directly from the cache. This "strong consistency" between two separate systems is, to be very clear, theoretically impossible, because updating the database and updating the cache are on different machines and cannot be done at the same time; there will be a time window in any case, during which there must be inconsistencies.
 
-Strong consistency at the application level, however, is possible. Consider briefly the familiar scenarios: CPU cache as memory cache, memory as disk cache - these are caching scenarios where no consistency problems ever occur. Why? It's really quite simple: all data users are required to be able to read data from the cache only, and not from both the cache and the underlying storage at the same time.
+Strong consistency at the application level, however, is possible. Consider briefly the familiar scenarios: CPU cache as the cache of memory, memory as the cache of disk. These are caching scenarios where no consistency problems ever occur. Why? It's really quite simple: All data users are required to read and write data from the cache only.
 
-For DB and Redis, if all data reads can only be provided by the cache, it is easy to achieve strong consistency and no inconsistency will occur. Let's break down the design of DB and Redis based on their characteristics.
+For DB and Redis, if all data reads can only be provided by the cache, it is easy to achieve strong consistency and no inconsistency will occur. Let's break down the design the cache system for DB and Redis based on their characteristics.
 
-#### Update cache or DB first
-In analogy to CPU cache vs. memory and memory cache vs. disk, both systems modify the cache first and then the underlying storage, so when it comes to the current DB caching scenario does it also modify the cache first and then the DB?
+#### Update Cache or DB First
+In analogy to CPU cache or disk cache, both systems modify the cache first and then the underlying storage, so when it comes to the current DB caching scenario should we also modify the cache first and then the DB?
 
-In the vast majority of application scenarios, developers will consider Redis as a cache, and when Redis fails, then the application needs to support degradation processing and still be able to access the database and provide some service capability. In such a scenario, if a downgrade occurs, writing to the cache before writing to the DB would be problematic, as data would be lost and the new version v2 would be read into the cache before the old version v1. Therefore, in a Redis-as-cache scenario, the vast majority of systems would be designed to write to the DB first and then to the cache
+In the vast majority of application scenarios, developers will consider Redis as a cache, and when Redis fails, then the application needs to support degradation processing and still be able to access the database and provide some service capability. In such a scenario, if a downgrade occurs, writing to the cache before writing to the DB would be problematic, as data in Redis may be lost if the data has not been written to DB. Therefore, in a Redis-as-cache scenario, the vast majority of systems would be designed to write to the DB first and then to the cache
 
-#### Write to DB success cache failure scenario
-What if the process crashes and the write to the DB succeeds, but the tag delete fails the first time? Although it will retry successfully after a few seconds, the user will still have the old version of the data when they go to read the cache in those few seconds. For example, if the user initiates a top-up and the funds are already in the DB, it is only the update of the cache that fails, resulting in the balance seen from the cache still being the old value. The handling of this situation is simple: when the user tops up and the write to the DB is successful, the application does not return success to the user, but waits until the cache update is also successful before returning success to the user; when the user queries the top-up transaction, they have to query whether both the DB and the cache have succeeded (they can query whether the two-stage message global transaction has succeeded), and only return success if both have succeeded.
+#### Write to DB Succeeded but Cache Failed
+What if the process crashes and the write to the DB succeeds, but tag-as-deleted fails the first time? Although it will retry successfully after a few seconds, the user will still have the old version of the data when they go to read the cache in those few seconds. For example, if the user initiates a money transfer and the balances are updated successfully in the DB, and only the update of the cache fails, then the balance seen from the cache is still the old value. The handling of this situation is quite simple: when the writes to the DB is successful, the application does not return success to the user, but waits until the cache updates is also successful and then return success to the user. If the user queries the transfer transaction, they have to query whether both the DB and the cache have succeeded (they can query whether the 2-phase message global transaction has succeeded), and only return success if both have succeeded.
 
-Under the above processing strategy, when the user initiates a top-up, until the cache is updated, the user sees that the transaction is still being processed and the result is unknown, which is in line with the strong consistency requirement; when the user sees that the transaction has been processed successfully, i.e. the cache has been updated successfully, then all the data from the cache is the updated data, which is also in line with the strong consistency requirement.
+Under the above strategy, when the user initiates a transfer, until the cache is updated, the user sees that the transaction is still being processed and the result is unknown, which match the strong consistency requirement; when the user sees that the transaction has been processed successfully, i.e. the cache has been updated successfully, then all the data from the cache is the updated data, which also match the strong consistency requirement.
 
-[dtm-labs/rockscache](https://github.com/dtm-labs/rockscache) also implements the strong consistency read requirement. When the `StrongConsistency` option is turned on, then the `Fetch` function in rockscache provides a strongly consistent cache read. The principle is not much different from that of the tag-delete method, with the minor change that instead of returning the old version of the data, it waits for the latest result of the `fetch' synchronously
+[dtm-labs/rockscache](https://github.com/dtm-labs/rockscache) has already implemented the strong consistency requirement. When the `StrongConsistency` option is turned on, then the `Fetch` function in rockscache provides a strongly consistent cache read. The principle is not much different from the origin tag-as-deleted method, with the minor change that instead of returning the old version of the data, it waits for the latest result of the `fetch' synchronously
 
-Of course there is a performance penalty for this change, as compared to the final consistent data read, a strong consistent read on the one hand has to wait for the latest result of the current "fetch", increasing the return latency, and on the other hand has to wait for the results of other processes, resulting in a sleep wait and consuming resources.
+Of course there is a performance penalty for this change, as compared to the eventually consistent data read, a strong consistent read on the one hand has to wait for the latest result of the current "fetch", increasing the read latency, and on the other hand has to wait for the results of other processes, resulting in a sleep wait and consuming resources.
 
 ## Strong Consistency in Cache Downgrade
-The above strongly consistent solution states that the premise of strong consistency is that "all data reads can only be done by the cache". However, if Redis fails and needs to be downgraded, the process of downgrading may be short and only take a few seconds, but this premise is not met if the inaccessibility is not accepted within those few seconds and access is still strictly required to be provided, then there will be a mix of read cache and read DB. However, because Redis fails infrequently and applications requiring strong consistency are usually equipped with proprietary Redis, the probability of encountering a failure degradation is low and many applications do not make harsh requirements in this area.
+The above strongly consistent solution states that the premise of strong consistency is that "all data reads can only be done by the cache". However, if Redis fails and needs to be downgraded, the process of downgrading may be short and only take a few seconds, but this premise is not met, because within those few seconds there will be a mix of read cache and read DB. However, because Redis fails infrequently and applications requiring strong consistency are usually equipped with proprietary Redis, the probability of encountering a failure degradation is low and many applications do not make harsh requirements in this case.
 
 However dtm-labs, a leader in the field of data consistency, has also delved into this problem and offers a solution for such demanding conditions.
 
-#### The process of upgrading and downgrading
-Now let's consider the process of applying a level-up or level-down to a problem with the Redis cache. Typically this downgrade switch is in the configuration centre, and when the configuration is modified, the individual application processes are notified of the downgrade configuration change one after another and then downgrade in behaviour. In the process of downgrading, there will be a mix of cache and DB accesses, and there may be inconsistencies in our solution above. So how do we handle this to ensure that the application still gets a strong consistent result despite this mixed access?
+#### The Process of Upgrading and Downgrading
+Now let's consider the process of applying a upgrading and downgrading to a problem with the Redis cache. Typically this downgrade switch is in the configuration centre, and when the configuration is modified, the individual application processes are notified of the downgrade configuration change one after another and then downgrade in behaviour. In the process of downgrading, there will be a mix of cache and DB accesses, and there may be inconsistencies in our solution above. So how do we handle this to ensure that the application still gets a strong consistent result despite this mixed access?
 
 In the case of mixed access, we can adopt the following strategy to ensure data consistency in mixed access between DB and cache.
 - When updating data, use distributed transactions to ensure that the following operations are atomic
@@ -199,29 +199,29 @@ In the case of mixed access, we can adopt the following strategy to ensure data 
 
 This strategy is not very different from the previous strong consistent solution that does not consider degradation scenarios, the read data part is completely unchanged, all that needs to change is the update data. rockscache assumes that updating the DB is an operation that may fail in business, so a SAGA transaction is used to ensure atomic operations, see example [dtm-cases/cache](https://) github.com/dtm-labs/dtm-cases/tree/main/cache)
 
-There is a sequential requirement to turn on and off the upgrade and downgrade. It is not possible to turn on cache reads and writes at the same time, but rather all write operations need to have ensured that the cache will be updated when the cache reads are turned on.
+There is a sequential requirement to turn on and off the upgradation and downgradation. It is not possible to turn on cache reads and writes at the same time. So the key point is that, when we reading from cache, we should ensure that all write must both write DB and cache, make the cache providing the newest data.
 
 The detailed process for downgrading is as follows.
 1. Initial state.
 	- Read: Mixed reads
 	- Write: DB+Cache
 2. read degradation.
-	- Read: cached read off. Mixed reads => all DB reads
+	- Read: cached read off. Mixed reads => DB only
 	- Write: DB + cache
 3. write degradation.
-	- Read: all DB reads.
+	- Read: DB.
 	- Write: cache write off. DB+cache => DB only
 
 The upgrade process is reversed as follows.
 1. initial state.
-	- Read: all DB reads
-	- Write: all write only DB
+	- Read: DB
+	- Write: DB
 2. Write upgrade.
-	- Read: all read DB
-	- Write: open write cache. Write DB only => Write DB + cache 4.
+	- Read: DB
+	- Write: write cache on. DB => DB + cache.
 4. read upgrade.
-	- Read: Partial read cache. Read DB all => mixed read
-	- Write: Write DB + cache
+	- Read: read cache on. DB => Mixed read
+	- Write: DB + cache
 
 The [dtm-labs/rockscache](https://github.com/dtm-labs/rockscache) has implemented the above strongly consistent cache management method.
 
@@ -229,11 +229,9 @@ For those interested, see [dtm-cases/cache](https://github.com/dtm-labs/dtm-case
 
 ## Summary
 This article is long and many of the analyses are rather obscure, so I will conclude with a summary of how Redis caches are used.
-- The simplest way is to have a short cache time, allow a small number of database changes, and not delete the cache synchronously
-- The simplest way is to have a short cache time, allow a small number of database changes, and not delete the cache as well as to ensure eventual consistency, and to prevent cache breakage: two-phase messages + rockscache
-- Strong consistency: two-phase messages + strong consistency (rockscache)
-- The most stringent consistency requirement is: two-phase message + strong consistency (rockscache) + lift compatibility
+- The simplest way: Only set a short cache time, allowing a small number of database changes not synced to the cache.
+- Ensure eventual consistency, and to prevent cache breakdown: 2-phase messages + tag-as-deleted(rockscache)
+- Strong consistency: 2-phase message + tag-as-deleted (with StrongConsistency enabled)
+- The most stringent consistency requirement: 2-phase message + rockscache + downgradation processing
 
-For the latter two approaches, we recommend using [dtm-labs/rockscache](https://github.com/dtm-labs/rockscache) as your caching solution
-
-Translated with www.DeepL.com/Translator (free version)
+For the latter three approaches, we recommend using [dtm-labs/rockscache](https://github.com/dtm-labs/rockscache) as your caching solution
