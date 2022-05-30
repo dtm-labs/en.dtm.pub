@@ -89,13 +89,13 @@ The 2-phase message pattern in dtm is perfect for updating/deleting the cache af
 
 ``` Go
 msg := dtmcli.NewMsg(DtmServer, gid).
-	Add(busi.Busi+"/UpdateRedis", &Req{Key: key1})
+	Add(busi.Busi+"/DeleteRedis", &Req{Key: key1})
 err := msg.DoAndSubmitDB(busi.Busi+"/QueryPrepared", db, func(tx *sql.Tx) error {
   // update db data with key1
 })
 ```
 
-In this code, DoAndSubmitDB will perform a local database operation to modify the database data, and when the modification is complete, it will commit a 2-phase message transaction that will call UpdateRedis asynchronously. QueryPrepared, which ensures that UpdateRedis is executed at least once if the local transaction is committed successfully.
+In this code, DoAndSubmitDB will perform a local database operation to modify the database data, and when the modification is complete, it will commit a 2-phase message transaction that will call DeleteRedis asynchronously. QueryPrepared, which ensures that DeleteRedis is executed at least once if the local transaction is committed successfully.
 
 The checkback logic is very simple, just copy code like the following.
 ``` Go
