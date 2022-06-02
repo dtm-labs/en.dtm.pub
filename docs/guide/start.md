@@ -18,20 +18,6 @@ Learn more behind the design of DTM in [why choose DTM](./why).
 
 [More ...](../other/using)
 
-<a style="
-    background-color:#646cff;
-    font-size: 0.9em;
-    color: #fff;
-    margin: 0.2em 0;
-    width: 200px;
-    text-align: center;
-    padding: 12px 24px;
-    display: inline-block;
-    vertical-align: middle;
-    border-radius: 2em;
-    font-weight: 600;
-" href="../other/opensource">Comparison to Seata</a>
-
 ## Features
 
 * Extremely easy to adopt
