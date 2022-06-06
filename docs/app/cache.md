@@ -11,7 +11,7 @@ Even if you use lock to do the updating, there are still corner cases that can c
 
 <img alt="redis cache inconsistency" src="https://martin.kleppmann.com/2016/02/unsafe-lock.png" height=400 />
 
-[dtm-labs](https://github.com/dtm-labs) is dedicated to solving the data consistency problem, and after analysing the existing practices in the industry, a new solution [dtm-labs/dtm](https://github.com/dtm-labs/dtm)+[dtm-labs/rockscache](https://github.com/dtm-labs/rockscache), which solves the above problem completely. In addition, as a mature solution, the solution is also anti-penetration, anti-breakdown and antiavalanche, and can also be applied to scenarios where strong data consistency is required.
+[dtm-labs](https://github.com/dtm-labs) is dedicated to solving the data consistency problem, and after analyzing the existing practices in the industry, a new solution [dtm-labs/dtm](https://github.com/dtm-labs/dtm)+[dtm-labs/rockscache](https://github.com/dtm-labs/rockscache), which solves the above problem completely. In addition, as a mature solution, the solution is also anti-penetration, anti-breakdown and anti-avalanche, and can also be applied to scenarios where strong data consistency is required.
 
 The existing solutions for managing cache are not covered in this article, but for those who are not familiar with them, you can refer to the following two articles
 - [https://yunpengn.github.io/blog/2019/05/04/consistent-redis-sql/](https://yunpengn.github.io/blog/2019/05/04/consistent-redis-sql/)
@@ -40,18 +40,18 @@ The "fetch data" operation is defined as
 	- The lock on the data has expired
 2. If the cache needs to be updated, then lock the cache, query the DB, update and unlock the cache if the lock holder is verified as unchanged.
 
-When the DB data is updated, the cache is guaranteed to be taged as deleted when the data is successfully updated via dtm (details can be found in a later section)
-- TagDeleted sets the data expiry time to 10s,  and sets the lock to expired, which will trigger a "fetch data" on the next query to the cache
+When the DB data is updated, the cache is guaranteed to be tagged as deleted when the data is successfully updated via dtm (details can be found in a later section)
+- TagAsDeleted sets the data expiry time to 10s,  and sets the lock to expired, which will trigger a "fetch data" on the next query to the cache
 
 With the above strategy:
 
 If the last version written to the database is Vi, the last version written to the cache is V, and the uuid written to V is uuidv, then there must be a sequence of events as follows.
 
-database write Vi -> cache data taged as deleted -> some query locks data and writes uuidv -> query database result V -> locker in cache is uuidv, write result V
+database write Vi -> cache data tagged as deleted -> some query locks data and writes uuidv -> query database result V -> locker in cache is uuidv, write result V
 
-In this sequence, the read of V occurs after the write of Vi, so V equals Vi, ensuring the final consistency of the cached data.
+In this sequence, the read of V occurs after the write of Vi, so V equals Vi, ensuring the eventual consistency of the cached data.
 
-[dtm-labs/rockscache](https://github.com/dtm-labs/rockscache) already implements the above method and is able to ensure the final consistency of the cached data.
+[dtm-labs/rockscache](https://github.com/dtm-labs/rockscache) already implements the above method and is able to ensure the eventual consistency of the cached data.
 - The `Fetch` function implements the previous query cache
 - The `TagAsDeleted` function implements the "tag as deleted" logic
 
@@ -119,7 +119,7 @@ The other option is that master-slave separation requires a single chain archite
 These two options have their own advantages and disadvantages, and the business can adopt them according to its own characteristics.
 
 ## Anti-breakdown
-rockscache is also anti-breakdown. When data changes, the popular approaches have the option of either updating the cache or deleting it, each with its own advantages and disadvantages. "tag as deleteed" combines the advantages of both approaches and overcomes the disadvantages of both.
+rockscache is also anti-breakdown. When data changes, the popular approaches have the option of either updating the cache or deleting it, each with its own advantages and disadvantages. "tag as deleted" combines the advantages of both approaches and overcomes the disadvantages of both.
 
 #### Update Cache
 By adopting an update caching strategy, then a cache is generated for all DB data updates, without differentiating between hot and cold data, then there are the following problems.
@@ -138,21 +138,21 @@ A common approach to preventing cache misses is to use distributed Redis locks t
 #### Tag as Deleted Method
 The "Tag as Deleted" method implemented by [dtm-labs/rockscache](https://github.com/dtm-labs/rockscache) described earlier is also a delete method, but it completely solves the problem of cache miss in the delete cache, and the collateral problems.
 1. The cache breakdown problem: in the tag-as-deleted method, if the data in the cache does not exist, then this data in the cache is locked, thus avoiding multiple requests hitting the back-end database.
-2. The above problems of large numbers of requests taking 3s to return data, and timed polling, also do not exist in delayed deletion, as when hot data is taged as deleted, the old version of the data is still in the cache and will be returned immediately, without waiting.
+2. The above problems of large numbers of requests taking 3s to return data, and timed polling, also do not exist in delayed deletion, as when hot data is tagged as deleted, the old version of the data is still in the cache and will be returned immediately, without waiting.
 
 Let's see how the tag-as-deleted method performs for different data access frequencies.
 1. Hotspot data, 1K qps, calculation cost 5ms: the tag-as-deleted method will return expired data in about 5~8ms, while updating the DB first and then the cache will also return expired data in about 0~3ms because it takes time to update the cache, so there is not much difference between the two.
-2. Hot data, 1K qps, calculation cost 3s: at this time tag-as-deleted method, in about 3s of time, will return expired data. It is usually better behaviour to return old data than to wait 3s for the data to be returned.
-3. Normal data, 50 qps, calculation cost 1s: when the behaviour of the tag-as-deleted method is analysed, the result is similar to 2, no problems.
-4. Low-frequency data, accessed once every 5 seconds, calculation cost 3s: when the behaviour of the tag-as-deleted method is essentially the same as the delete-cache policy, no problems
+2. Hot data, 1K qps, calculation cost 3s: at this time tag-as-deleted method, in about 3s of time, will return expired data. It is usually better behavior to return old data than to wait 3s for the data to be returned.
+3. Normal data, 50 qps, calculation cost 1s: when the behavior of the tag-as-deleted method is analyzed, the result is similar to 2, no problems.
+4. Low-frequency data, accessed once every 5 seconds, calculation cost 3s: when the behavior of the tag-as-deleted method is essentially the same as the delete-cache policy, no problems
 5. Cold data, accessed once every 10 minutes: The tag-as-deleted method and the delete cache policy is basically the same, except that the data is kept for 10s longer than the delete cache method, which does not take up much space, no problem
 
-There is an extreme case where there is no data in the cache and suddenly a large number of requests arrive, a scenario which is not friendly to the update cache method, the delete cache method, or the tag-as-deleted method. This is a scenario that developers need to avoid, and needs to be resolved by warming up the cache, rather than throwing it to the caching system directly. Of course, the tag-as-deleted method does not perform any less well than any other solution as it already minimises the amount of requests hitting the database.
+There is an extreme case where there is no data in the cache and suddenly a large number of requests arrive, a scenario which is not friendly to the update cache method, the delete cache method, or the tag-as-deleted method. This is a scenario that developers need to avoid, and needs to be resolved by warming up the cache, rather than throwing it to the caching system directly. Of course, the tag-as-deleted method does not perform any less well than any other solution as it already minimizes the amount of requests hitting the database.
 
 ## Anti-penetration and Anti-avalanche
 [dtm-labs/rockscache](https://github.com/dtm-labs/rockscache) also implements anti-penetration and anti-avalanche.
 
-Cache penetration is when data that is not available in either the cache or the database is requested in large numbers. Since the data does not exist, the cache does not exist either and all requests are directed to the database. rockscache can set `EmptyExipire` to set the cache time for empty results, if set to 0, then no empty data is cached and anti-penetration is turned off.
+Cache penetration is when data that is not available in either the cache or the database is requested in large numbers. Since the data does not exist, the cache does not exist either and all requests are directed to the database. rockscache can set `EmptyExpire` to set the cache time for empty results, if set to 0, then no empty data is cached and anti-penetration is turned off.
 
 A cache avalanche is when there is a large amount of data in the cache, all of which expires at the same point of time, or within a short period of time, and when requests come in with no data in the cache, they will all request the database, which will cause a sudden increase in pressure on the database, which will go down if it can't cope. rockscache can set `RandomExpireAdjustment` to add a random value to the expiry time to avoid simultaneous expiration.
 
@@ -187,7 +187,7 @@ The above strongly consistent solution states that the premise of strong consist
 However dtm-labs, a leader in the field of data consistency, has also delved into this problem and offers a solution for such demanding conditions.
 
 #### The Process of Upgrading and Downgrading
-Now let's consider the process of applying a upgrading and downgrading to a problem with the Redis cache. Typically this downgrade switch is in the configuration centre, and when the configuration is modified, the individual application processes are notified of the downgrade configuration change one after another and then downgrade in behaviour. In the process of downgrading, there will be a mix of cache and DB accesses, and there may be inconsistencies in our solution above. So how do we handle this to ensure that the application still gets a strong consistent result despite this mixed access?
+Now let's consider the process of applying a upgrading and downgrading to a problem with the Redis cache. Typically this downgrade switch is in the configuration centre, and when the configuration is modified, the individual application processes are notified of the downgrade configuration change one after another and then downgrade in behavior. In the process of downgrading, there will be a mix of cache and DB accesses, and there may be inconsistencies in our solution above. So how do we handle this to ensure that the application still gets a strong consistent result despite this mixed access?
 
 In the case of mixed access, we can adopt the following strategy to ensure data consistency in mixed access between DB and cache.
 - When updating data, use distributed transactions to ensure that the following operations are atomic
@@ -199,13 +199,13 @@ In the case of mixed access, we can adopt the following strategy to ensure data 
 
 This strategy is not very different from the previous strong consistent solution that does not consider degradation scenarios, the read data part is completely unchanged, all that needs to change is the update data. rockscache assumes that updating the DB is an operation that may fail in business, so a SAGA transaction is used to ensure atomic operations, see example [dtm-cases/cache](https://) github.com/dtm-labs/dtm-cases/tree/main/cache)
 
-There is a sequential requirement to turn on and off the upgradation and downgradation. It is not possible to turn on cache reads and writes at the same time. So the key point is that, when we reading from cache, we should ensure that all write must both write DB and cache, make the cache providing the newest data.
+There is a sequential requirement to turn on and off the upgrading and downgrading. It is not possible to turn on cache reads and writes at the same time. So the key point is that, when we reading from cache, we should ensure that all write must both write DB and cache, make the cache providing the newest data.
 
 The detailed process for downgrading is as follows.
 1. Initial state.
 	- Read: Mixed reads
 	- Write: DB+Cache
-2. read degradation.
+2. Read degradation.
 	- Read: cached read off. Mixed reads => DB only
 	- Write: DB + cache
 3. write degradation.
@@ -219,7 +219,7 @@ The upgrade process is reversed as follows.
 2. Write upgrade.
 	- Read: DB
 	- Write: write cache on. DB => DB + cache.
-4. read upgrade.
+3. Read upgrade.
 	- Read: read cache on. DB => Mixed read
 	- Write: DB + cache
 
@@ -232,6 +232,6 @@ This article is long and many of the analyses are rather obscure, so I will conc
 - The simplest way: Only set a short cache time, allowing a small number of database changes not synced to the cache.
 - Ensure eventual consistency, and to prevent cache breakdown: 2-phase messages + tag-as-deleted(rockscache)
 - Strong consistency: 2-phase message + tag-as-deleted (with StrongConsistency enabled)
-- The most stringent consistency requirement: 2-phase message + rockscache + downgradation processing
+- The most stringent consistency requirement: 2-phase message + rockscache + downgrading strategy
 
 For the latter three approaches, we recommend using [dtm-labs/rockscache](https://github.com/dtm-labs/rockscache) as your caching solution
