@@ -11,8 +11,10 @@ The individual participants in the entire distributed transaction of dtm, are di
 - Design your dtm multi-instances solution: Single instance deployment is not recommended for online applications. dtm is the same as a normal stateless application, just multi-instances.
 - Configure your dtm server
 
-## Points to note
+## Notices
 - ** If the dtm server uses a database, then it must use the primary database, not the replicas. On the one hand dtm is write more read less; on the other hand dtm has high requirements for data consistency, slave library latency can lead to various problems. **
+- ** The timezone of dtm server should be the same as database **
+- ** The time difference of dtm server and database should not be greater than 3 seconds **
 
 ## Preparing RM data tables
 RM involves local resource management, so using the subtransaction barrier technology provided by DTM requires the creation of subtransaction barrier-related tables in the local database, see the barrier file in [Build SQL](https://github.com/dtm-labs/dtm/blob/main/sqls/) for details of the table sqls.
