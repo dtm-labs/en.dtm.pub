@@ -4,15 +4,11 @@
 
 #### go
 
-Both dtmcli and dtmgrpc here are copies of the contents inside the dtm project. Using the packages here, instead of dtm, will give your application fewer dependencies and smaller packages
+Repository `client` here are a copy of the contents inside the dtm project. Using the packages here, instead of dtm, will give your application fewer dependencies and smaller packages
 
-http sdk: [https://github.com/dtm-labs/dtmcli](https://github.com/dtm-labs/dtmcli)
+client: [https://github.com/dtm-labs/client](https://github.com/dtm-labs/client)
 
-Minimalist example: [https://github.com/dtm-labs/dtmcli-go-sample](https://github.com/dtm-labs/dtmcli-go-sample)
-
-grpc sdk: [https://github.com/dtm-labs/dtmgrpc](https://github.com/dtm-labs/dtmgrpc)
-
-Minimal example: [https://github.com/dtm-labs/dtmgrpc-go-sample](https://github.com/dtm-labs/dtmgrpc-go-sample)
+Minimalist example: [https://github.com/dtm-labs/quick-start-sample](https://github.com/dtm-labs/quick-start-sample)
 
 The most complete examples of SDK usage, including grpc/http/xa/msg/saga/tcc/barrier, etc., are combined in the following project
 

@@ -6,7 +6,7 @@ dtm supports a variety of protocols, including generic class protocols HTTP, gRP
 
 HTTP as the most common protocol in front-end and back-end interaction, usually also used for back-end internal communication protocol.
 
-When dtm server starts, it listens to port 36789 by default to provide HTTP service. It is recommended that you use the SDK [dtmcli](https://github.com/dtm-labs/dtmcli) for a minimalist example of using HTTP, see [dtmcli-go-sample](https://github.com/dtm-labs/dtmcli-go- sample)
+When dtm server starts, it listens to port 36789 by default to provide HTTP service. You can use the SDK [client/dtmcli](https://github.com/dtm-labs/client/dtmcli) for a minimalist example of using HTTP, see [dtmcli-qs](https://github.com/dtm-labs/quick-start-sample/dtmcli-qs)
 
 For more advanced HTTP usage examples, please refer to the file with http under [dtm-examples](https://github.com/dtm-labs/dtm-examples)
 
@@ -16,7 +16,7 @@ If you are accessing a microservice protocol on top of HTTP, you may need to pro
 
 gRPC is widely used in back-end microservices, a lot of cloud-native applications, a lot of microservice frameworks, built on top of this protocol, very widely used
 
-When dtm server starts, it listens to port 36790 by default to provide gRPC services. For users using dtm via gRPC protocol, we recommend you to use the SDK [dtmgrpc](https://github.com/dtm-labs/dtmgrpc), for a minimal example of using gRPC, please refer to [dtmgrpc-go-sample](https://github.com) /dtm-labs/dtmgrpc-go-sample)
+When dtm server starts, it listens to port 36790 by default to provide gRPC services. For users using dtm via gRPC protocol, we recommend you to use the SDK [dtm-labs/clientdtmgrpc](https://github.com/dtm-labs/client/dtmgrpc), for a minimal example of using gRPC, please refer to [dtmgrpc-qs](https://github.com/dtm-labs/quick-start-sample/dtmgrpc-qs)
 
 For more advanced gRPC usage examples, please refer to the file with grpc under [dtm-examples](https://github.com/dtm-labs/dtm-examples)
 

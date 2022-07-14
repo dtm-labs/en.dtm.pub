@@ -13,10 +13,9 @@ The main goal of [dtm-labs](https://github.com/dtm-labs) is to make distributed 
 ## Main project dtm
 
 The dtm project has the following main directories
-
+- admin: The console of dtm, using vue3 + typescript + vite + pinia
 - bench: the server code for performance testing, and the related test scripts
-- dtmcli: The http client for dtm, which is synced to dtm-labs/dtmcli during release
-- dtmgrpc: dtm's grpc client, synced to dtm-labs/dtmgrpc when publishing
+- client: The client for dtm, including dtmcli/dtmgrpc/workflow, which is synced to dtm-labs/client during release
 - dtmsvr: server side of dtm, including http and grpc services
 - dtmutil: the tool class used by dtm, will be used in dtmsvr and test
 - helper: all kinds of helper files

@@ -54,7 +54,7 @@ go run main.go
 #### Start the example
 
 ``` bash
-git clone https://github.com/dtm-labs/dtmcli-go-sample && cd dtmcli-go-sample
+git clone https://github.com/dtm-labs/dtm && cd dtm
 go run main.go
 ```
 
