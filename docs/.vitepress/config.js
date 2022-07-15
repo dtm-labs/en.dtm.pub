@@ -96,6 +96,10 @@ module.exports = {
               link: '/practice/xa'
             },
             {
+              text: 'Workflow',
+              link: '/practice/workflow'
+            },
+            {
               text: 'Other',
               link: '/practice/other'
             },
