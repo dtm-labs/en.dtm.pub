@@ -137,9 +137,9 @@ In a single local transaction, the total amount of A+B at any moment to check (w
 ## Unable to be strongly consistent
 In practical distributed applications. We have not yet seen a strong consistency solution.
 
-Let's look at XA transactions, which have the highest level of consistency in distributed transactions (readers can refer to [XA transactions](. /xa)). Is it strong consistency? Let's take a cross-bank transfer (here, we simulate it with a cross-database update) as an example to analysis. The following is a timing diagram of an XA transaction.
+Let's look at XA transactions, which have the highest level of consistency in distributed transactions (readers can refer to [XA transactions](./xa)). Is it strong consistency? Let's take a cross-bank transfer (here, we simulate it with a cross-database update) as an example to analysis. The following is a timing diagram of an XA transaction.
 
-! [xa-no-c](. /imgs/xa-no-c.svg)
+![xa-no-c](./imgs/xa-no-c.svg)
 
 In this timing diagram, we launch the query at the point of time (in the middle of two commits) shown in the diagram. The result will be A+B+30, which is not equal to A+B. So in this case, XA does not meet the requirement of strong consistency.
 
@@ -152,7 +152,7 @@ Since ordinary XA transactions are not strongly consistent, then is it theoretic
 
 Let's first see whether we can achieve strong consistency if we set the isolation level of the database involved in the XA transaction to Serializable. Let's look at the previous timing scenario.
 
-! [xa-serial-c](... /imgs/xa-serial-c.png)
+![xa-serial-c](.../imgs/xa-serial-c.png)
 
 In this case, the result is checked to be equal to A+B.
 
@@ -160,7 +160,7 @@ In this case, the result is checked to be equal to A+B.
 
 But then there are other scenarios where problems arise, as shown in the following figure.
 
-! [xa-serial-c2](. /imgs/xa-serial-c2.png)
+![xa-serial-c2](./imgs/xa-serial-c2.png)
 
 The result of the query according to the timing in the figure is: A+B-30, which is inconsistent.
 
@@ -173,7 +173,7 @@ After thinking deeply about this strong consistency problem, there is an approac
 
 With the above strategy, we can see that querying at any point in the timing diagram, the result obtained is A+B
 
-! [xa-strong-c](. /imgs/xa-strong-c.png)
+![xa-strong-c](./imgs/xa-strong-c.png)
 
 - query at time T0, then the modification must have happened after the query is all done, so the query gets the result A+B
 - In T1, T2, T3 query, the query results will only be returned after the completion of all the changes, and results are also A + B
@@ -192,10 +192,10 @@ Since all existing distributed transaction mode are not able to achieve strong c
 
 The consistency from strong to weak are.
 
-[XA transactions](. /xa)>[TCC](. /tcc)>[two-phase message](. /msg)>[SAGA](. /saga)
+[XA transactions](./xa)>[TCC](./tcc)>[two-phase message](./msg)>[SAGA](./saga)
 
 They are classified as.
-! [c-classify](. /imgs/c-classify.png)
+![c-classify](./imgs/c-classify.png)
 
 - **Short inconsistency window**: XA and TCC can achieve a short inconsistency window under ideal circumstances
 - **Long inconsistency window**: SAGA and MSG, on the other hand, lack a way to control the inconsistency window time and will be relatively longer
