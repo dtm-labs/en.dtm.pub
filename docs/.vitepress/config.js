@@ -31,9 +31,8 @@ module.exports = {
       { text: 'Guide', link: '/guide/start' },
       { text: '中文', link: 'https://dtm.pub' },
       { text: 'Blog', link: 'https://medium.com/@dongfuye' },
-      // { text: '示例', link: '/examples/' },
       { text: 'Github', link: 'https://github.com/dtm-labs/dtm' },
-      { text: 'zhihu', link: 'https://www.zhihu.com/people/ye-dongfu' }
+      { text: 'Docs source', link: 'https://github.com/dtm-labs/en.dtm.pub' }
     ],
     sidebar: {
       '/examples/': 'auto',
