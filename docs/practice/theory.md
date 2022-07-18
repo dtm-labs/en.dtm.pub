@@ -139,7 +139,7 @@ In practical distributed applications. We have not yet seen a strong consistency
 
 Let's look at XA transactions, which have the highest level of consistency in distributed transactions (readers can refer to [XA transactions](./xa)). Is it strong consistency? Let's take a cross-bank transfer (here, we simulate it with a cross-database update) as an example to analysis. The following is a timing diagram of an XA transaction.
 
-![xa-no-c](./imgs/xa-no-c.svg)
+![xa-no-c](../imgs/xa-no-c.svg)
 
 In this timing diagram, we launch the query at the point of time (in the middle of two commits) shown in the diagram. The result will be A+B+30, which is not equal to A+B. So in this case, XA does not meet the requirement of strong consistency.
 
@@ -152,7 +152,7 @@ Since ordinary XA transactions are not strongly consistent, then is it theoretic
 
 Let's first see whether we can achieve strong consistency if we set the isolation level of the database involved in the XA transaction to Serializable. Let's look at the previous timing scenario.
 
-![xa-serial-c](.../imgs/xa-serial-c.png)
+![xa-serial-c](../imgs/xa-serial-c.svg)
 
 In this case, the result is checked to be equal to A+B.
 
@@ -160,25 +160,29 @@ In this case, the result is checked to be equal to A+B.
 
 But then there are other scenarios where problems arise, as shown in the following figure.
 
-![xa-serial-c2](./imgs/xa-serial-c2.png)
+![xa-serial-c2](../imgs/xa-serial-c2.svg)
 
 The result of the query according to the timing in the figure is: A+B-30, which is inconsistent.
 
 > The result from microservice 1 is A-30, because under Serializable Isolation, the query will wait until the transaction A-30 is committed; The result from microservice 2 is B, because the transaction B+30 has not yet started; the sum is A+B-30.
 
-After thinking deeply about this strong consistency problem, there is an approach to achieve strong consistency, which is as follows.
+After thinking deeply about this issue of strong consistency, there is a way to achieve strong consistency under a normal read-commit, as follows.
 
-- For querying data, use "select for update" in XA transactions. After all data is checked, then xa commit
-- In order to avoid deadlocks, we need to sort the databases involved, and access data must be written and queried in the same database order.
+- For queries, also use XA transactions, and when querying data, use select for update, and then xa commit after all data has been read
+- In the current timing diagram, we need to lock A to check A, then lock B to check B, and then commit separately, otherwise deadlocks may occur
 
 With the above strategy, we can see that querying at any point in the timing diagram, the result obtained is A+B
 
-![xa-strong-c](./imgs/xa-strong-c.png)
+![xa-strong-c](../imgs/xa-strong-c.svg)
 
 - query at time T0, then the modification must have happened after the query is all done, so the query gets the result A+B
 - In T1, T2, T3 query, the query results will only be returned after the completion of all the changes, and results are also A + B
 
-Obviously this theoretical strong consistency is extremely inefficient, all database transactions with data intersection are executed serially, and also need to query/modify data in a specific order, so the cost is extremely high and almost impossible to apply in production.
+It is clear that the disadvantages of strong consistency in this scenario are numerous. Whereas most Internet applications are read more and write less, the normal read can be done quickly without being locked by MVCC. But the strongly consistent scheme described above:
+- On the one hand, the efficiency is extremely low, all operations of database which have data intersection must be executed serially.
+- On the other hand, deadlocks can occur when developers make multiple data queries to the database, either allowing developers to carefully shoot for a good access sequence or accept the deadlock.
+
+There are currently no real-world applications that have adopted this approach for strongly consistent cross-database distributed transactions.
 
 Is it possible to use the approach from NewSQL to achieve strong consistency of such distributed transactions across libraries and microservices? Theoretically, it is possible.
 
@@ -195,7 +199,7 @@ The consistency from strong to weak are.
 [XA transactions](./xa)>[TCC](./tcc)>[two-phase message](./msg)>[SAGA](./saga)
 
 They are classified as.
-![c-classify](./imgs/c-classify.png)
+![c-classify](../imgs/c-classify.png)
 
 - **Short inconsistency window**: XA and TCC can achieve a short inconsistency window under ideal circumstances
 - **Long inconsistency window**: SAGA and MSG, on the other hand, lack a way to control the inconsistency window time and will be relatively longer
