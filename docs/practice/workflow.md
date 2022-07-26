@@ -1,14 +1,14 @@
 # Workflow Mode
 
-The Workflow pattern is a pattern first introduced by DTM. Under this pattern, a mixture of XA, SAGA and TCC can be used, allowing users to customise most of the contents of a distributed transaction, providing great flexibility.
+The Workflow pattern is a pattern first introduced by DTM. Under this pattern, a mixture of XA, SAGA and TCC can be used, allowing users to customize most of the contents of a distributed transaction, providing great flexibility.
 
 ## workflow example
 In Workflow mode, both HTTP and gRPC protocols can be used. The following is an example of the gRPC protocol, which is divided into the following steps.
-- Initialise the SDK
+- Initialize the SDK
 - Register workflow
 - Executing workflow
 
-#### First you need to initialise the SDK's workflow before you can use it.
+#### First you need to Initialize the SDK's workflow before you can use it.
 
 ``` Go
 import "github.com/dtm-labs/dtmgrpc/workflow"
