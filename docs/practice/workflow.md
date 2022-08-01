@@ -1,6 +1,6 @@
 # Workflow Mode
 
-The Workflow pattern is a pattern first introduced by DTM. Under this pattern, a mixture of XA, SAGA and TCC can be used, allowing users to customize most of the contents of a distributed transaction, providing great flexibility.
+The Workflow pattern is a pattern first introduced by DTM. Under this pattern, a mixture of XA, SAGA and TCC can be used, and a mixture of HTTP, gRPC, and local operations can also be used, allowing users to customize most of the contents of a distributed transaction, providing great flexibility.
 
 ## workflow example
 In Workflow mode, both HTTP and gRPC protocols can be used. The following is an example of the gRPC protocol, which is divided into the following steps.
@@ -115,7 +115,32 @@ In Workflow mode, Saga, Tcc and XA as described above are all patterns of branch
 - Saga: common business that is not suitable for XA can use this model, this model has less extra development than Tcc, only need to develop forward operation and compensation operation
 - Tcc: suitable for high consistency requirements, such as the transfer described earlier, this pattern has the most additional development and requires the development of operations including `Try/Confirm/Cancel`
 
-## idempotency requirements
+## gRPC support
+Support for gRPC, consists of two aspects:
+- communicating with the dtm server by gRPC protocol, e.g. in the above example, after calling `workflow.InitGrpc` above to initialize, the dtm SDK will take the gRPC interface to interact with the dtm server
+- In the above example, `reply, err = busi.BusiCli.TransIn(wf.Context, req)`, this gRPC call will automatically save the result of the call to the dtm server through the gRPC interceptor. When workflow is executed again, the result saved by the dtm server will be returned directly to the caller.
+
+## HTTP support
+Support for HTTP, consists of two aspects:
+- Communicating with the dtm server by means of the HTTP protocol. After initialization of `workflow.InitHTTP`, the dtm SDK will take the HTTP interface to interact with the dtm server.
+- Accessing the transaction branch by HTTP protocol, e.g. `resp, err := wf.NewBranch().NewRequest().SetBody(req).Post(Busi + "/TransOut")`, in this HTTP call, the result of the call will be automatically saved to the dtm server and, when workflow is executed again, the result saved by the dtm server is automatically returned directly to the caller.
+
+## Local Operation Support
+In Workflow mode, your transaction branch, not only can use remote branches such as HTTP/gRPC, but can also be a local operation. The following code demonstrates a local transactional operation.
+``` Go
+wf.Do(func(bb *dtmcli.BranchBarrier) ([]byte, error) {
+  return nil, bb.CallWithDB(dbGet(), func(tx *sql.Tx) error {
+    return busi.SagaAdjustBalance(tx, busi.TransOutUID, -req.Amount, "")
+  })
+})
+```
+
+You can perform local transaction operations as well as other operations, as flexibly as possible.
+
+## gRPC/HTTP/Local Mixed Usage
+Within a distributed transaction, you can also use a mix of gRPC/HTTP/local. These approaches to your transaction branch can give you a great deal of flexibility. It provides a very good solution to introducing distributed transactions for multiple technology stacks, for various scenarios such as the coexistence of multiple protocols, and for existing legacy systems.
+
+## Idempotency Requirements
 In the Workflow pattern, when a crash occurs, a retry is performed, so the individual operations are required to support idempotency, i.e. the result of the first call is the same as the next tries, returning the same result. In business, the `unique key` of the database is usually used to achieve idempotency, specifically `insert ignore "unique-key"`, if the insert fails, it means that this operation has been completed, this time directly ignored to return; if the insert succeeds, it means that this is the first operation, continue with the subsequent business operations.
 
 If your business itself is idempotent, then you can operate your business directly; if your business doesnot provides idempotent functionality, then dtm provides a `BranchBarrier` helper class, based on the above unique-key principle, which can easily help developers implement idempotent operations for `Mysql/Mongo/Redis`.
