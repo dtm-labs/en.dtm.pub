@@ -15,11 +15,11 @@ The most complete examples of SDK usage, including grpc/http/xa/msg/saga/tcc/bar
 [https://github.com/dtm-labs/dtm-examples](https://github.com/dtm-labs/dtm-examples)
 
 #### php
-Client sdk concurrent version (supports Hyperf, SAGA, TCC, MSG, subtransaction barriers) [https://github.com/dtm-php/dtm-client](https://github.com/dtm-php/dtm-client)
+Client sdk concurrent version (supports Hyperf, SAGA, TCC, MSG, XA, subtransaction barriers) [https://github.com/dtm-php/dtm-client](https://github.com/dtm-php/dtm-client)
 
 Example: [https://github.com/dtm-php/dtm-sample](https://github.com/dtm-php/dtm-sample)
 
-The above SDK is personally operated by [Huang Chaohui](https://github.com/huangzhhui), a famous coder in PHP, and recommended by the founder of Swool, with high code quality and active community
+The above SDK is designed and reviewed by [Huang Chaohui](https://github.com/huangzhhui), a famous coder in PHP, and is mainly contributed by (PandaLIU-1111)[https://github.com/PandaLIU-1111]. It is with high code quality and has a active community, and also recommended by the founder of Swool.
 
 Common client sdk (currently only support TCC): [https://github.com/dtm-labs/dtmcli-php](https://github.com/dtm-labs/dtmcli-php)
 
