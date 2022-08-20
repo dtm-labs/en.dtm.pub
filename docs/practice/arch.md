@@ -97,6 +97,7 @@ The three results with clear meaning in HTTP and gRPC can be represented like th
 
 The above HTTP and gRPC result definitions are friendly and compatible with the cloud-native retry policy. By default, if the microservice is configured with a retry policy, other results may be retried (usually HTTP 502 or gRPC Unavailable), while OK results will not be retried.
 
+For some transaction branches that do not support rollback, such as Msg mode branches, Saga mode Compensation, and Tcc mode Confirm/Cancel, FAILURE should not be returned inside these branches.
 ## VS XA DTP model
 DTM architecture and role, are very similar to the X/Open XA DTP model. RM, AP, TM take on the same function. DTM has just extended XA DTP model to the service/microservice architecture.
 
