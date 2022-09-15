@@ -65,6 +65,34 @@ app.GET(BusiAPI+"/QueryPreparedB", dtmutil.WrapHandler2(func(c *gin.Context) int
 
 At this point, a complete two-stage message distributed transaction is written.
 
+## Topic message
+
+You can also make the  2-phase message transaction call by topic message.  "topic" has the same semantics which is in message queue.
+
+Firstly we subscribe a topic named `TransIn` for our business api:
+
+> We can also manage topics in dtm's console.
+
+```go
+resp, err := dtmcli.GetRestyClient().R().SetQueryParams(map[string]string{
+		"topic":  "TransIn",
+		"url":    busi.Busi+"/SagaBTransIn",
+		"remark": "trans in api",
+	}).Get(dtmutil.DefaultHTTPServer + "/subscribe")
+```
+
+Then open the 2-phase message transaction and send message to the topic `TransIn`
+
+```go
+		msg := dtmcli.NewMsg(DtmServer, shortuuid.New()).
+			AddTopic("TransIn", &TransReq{ Amount: 30 })
+		err := msg.DoAndSubmitDB(busi.Busi+"/QueryPreparedB", dbGet(), func(tx *sql.Tx) error {
+			return busi.SagaAdjustBalance(tx, busi.TransOutUID, -req.Amount)
+		})
+```
+
+Note that the change of topic needs to take a few seconds to take effect, which depends on the `ConfigUpdateInterval` configuration parameter.
+
 ## Run the example
 If you want to run a successful example in its entirety, the steps are as follows.
 1. run dtm

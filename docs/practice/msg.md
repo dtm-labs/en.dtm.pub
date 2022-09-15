@@ -140,6 +140,16 @@ This problem is completely solved by dtm's 2-phase message solution. dtm's 2-pha
 
 So how do 2-phase message distinguish between in-progress and rolled back messages? The trick lies in the data inserted during the checkback. If the database transaction is still in progress at the time of the checkback, then the insert operation will be blocked by the in-progress transaction, because the insert operation will wait for the row lock held by the transaction. If the insert operation returns normally, then the local transaction in the database, which must have ended.
 
+## Topic message principle
+
+As mentioned in previous article, the 2-phase message can also implement branch transaction call by topic message.
+
+The dtm server maintains a mapping of `topic -> APIs ` and stores it in database. The server reads the mapping information regularly and loads it into memory for cache. 
+
+When dtm  server processes the 2-phase message request which includes topic message, it will use the cached mapping information to find corresponding APIs for each topic, and then call the APIs one by one.
+
+Topic message decouples the distributed transaction caller and external services, which means we don't need to modify caller's code when external services' APIs change, and we can configure APIs dynamically.
+
 ## Common messages
 2-phase messages can replace not only the local message table scheme, but also the normal message scheme. If you call Submit directly, then it is similar to the normal message scheme, but provides a more flexible and simple interface.
 
